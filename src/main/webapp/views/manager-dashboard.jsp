@@ -150,11 +150,7 @@
         .btn-print { padding:10px 24px; background:linear-gradient(135deg,#1e8449,#34a853); color:white; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:transform .2s; }
         .btn-print:hover { transform:translateY(-1px); }
 
-        @media print {
-            nav, .action-cards, .filter-bar, #alertBox, .table-card, .modal-footer, .btn-close, .no-print { display:none !important; }
-            .modal-overlay { position:static; background:none; }
-            .modal { box-shadow:none; padding:0; max-height:none; }
-        }
+
         @media(max-width:760px) { .stats{grid-template-columns:1fr 1fr;} .form-row2{grid-template-columns:1fr;} }
         @media(max-width:480px) { .stats{grid-template-columns:1fr;} }
     </style>
@@ -315,7 +311,7 @@
         <div id="billContent"></div>
         <div class="modal-footer no-print">
             <button class="btn-mcancel" onclick="closeBillModal()">Close</button>
-            <button class="btn-print" onclick="window.print()">&#128424; Print Bill</button>
+            <button class="btn-print" onclick="printBill()">&#128424; Print Bill</button>
         </div>
     </div>
 </div>
@@ -739,6 +735,31 @@ function openBillModal(id) {
     });
 }
 function closeBillModal() { $('#billModal').removeClass('show'); }
+
+function printBill() {
+    var content = document.getElementById('billContent').innerHTML;
+    var w = window.open('', '_blank', 'width=800,height=900');
+    w.document.write(
+        '<!DOCTYPE html><html><head><title>OceanView Resort – Bill</title>' +
+        '<style>' +
+        'body{font-family:Arial,sans-serif;padding:48px 56px;color:#1e3a4a;}' +
+        '.bill-header-box{text-align:center;padding:28px;background:linear-gradient(135deg,#0a4f6e,#1aa3c8);border-radius:12px;color:white;margin-bottom:32px;}' +
+        '.bill-header-box h3{font-size:26px;font-weight:700;margin:0;}' +
+        '.bill-header-box p{font-size:16px;opacity:.85;margin-top:6px;}' +
+        '.bill-table{width:100%;border-collapse:collapse;margin-bottom:16px;}' +
+        '.bill-table td{padding:12px 8px;font-size:16px;border-bottom:1px solid #eef4f7;}' +
+        '.bill-table .lbl{color:#7a95a8;}' +
+        '.bill-table .val{text-align:right;font-weight:600;color:#1e3a4a;}' +
+        '.bill-total-row td{font-size:19px;font-weight:800;color:#0a4f6e;border-top:2px solid #0a4f6e;padding-top:16px;}' +
+        '</style></head><body>' +
+        content +
+        '</body></html>'
+    );
+    w.document.close();
+    w.focus();
+    w.print();
+    w.close();
+}
 
 function showBillData(b) {
     var html =
