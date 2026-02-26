@@ -226,6 +226,9 @@
         .modal .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .modal .pw-hint  { font-size: 12px; color: #9ab4c2; margin-top: 5px; }
 
+        .modal-alert { display:none; padding:10px 14px; border-radius:8px; font-size:13.5px; font-weight:500; margin-bottom:14px; }
+        .modal-alert-error { background:#fde8e8; color:#c0392b; border:1px solid #f5c6c6; }
+
         .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
         .btn-modal-cancel {
             padding: 11px 22px; border: 2px solid #dce8ee; border-radius: 10px;
@@ -331,6 +334,7 @@
             <h2>&#9998; Edit Staff Account</h2>
             <button class="btn-close-modal" onclick="closeEditModal()">&#10005;</button>
         </div>
+        <div id="editAlertBox" class="modal-alert"></div>
         <form id="editForm" novalidate>
             <input type="hidden" id="editId" />
             <div class="form-row">
@@ -439,7 +443,7 @@
                 '<td>' + (u.email ? esc(u.email) : '<span style="color:#b0c8d4">—</span>') + '</td>' +
                 '<td><span class="badge ' + badgeCls + '">' + roleLabel + '</span></td>' +
                 '<td><div class="actions">' +
-                    '<button class="btn-edit"   onclick="openEditModal(' + JSON.stringify(u) + ')">Edit</button>' +
+                    '<button class="btn-edit"   onclick="openEditModal(' + u.id + ')" >Edit</button>' +
                     '<button class="btn-delete" onclick="openDeleteModal(' + u.id + ', \'' + esc(u.fullName) + '\')">Delete</button>' +
                 '</div></td>' +
             '</tr>';
@@ -463,7 +467,9 @@
     }
 
     // ── Edit modal ────────────────────────────────────────────
-    function openEditModal(u) {
+    function openEditModal(id) {
+        var u = allUsers.find(function(x) { return x.id === id; });
+        if (!u) return;
         $('#editId').val(u.id);
         $('#editFullName').val(u.fullName);
         $('#editEmail').val(u.email);
@@ -473,7 +479,17 @@
         $('#editModal').addClass('show');
     }
 
-    function closeEditModal() { $('#editModal').removeClass('show'); }
+    function closeEditModal() {
+        $('#editModal').removeClass('show');
+        $('#editAlertBox').hide();
+    }
+
+    function showEditAlert(msg) {
+        $('#editAlertBox')
+            .removeClass('modal-alert-error')
+            .addClass('modal-alert modal-alert-error')
+            .html(msg).stop(true).show();
+    }
 
     function saveEdit() {
         var id       = $('#editId').val();
@@ -483,11 +499,13 @@
         var role     = $('#editRole').val();
         var password = $.trim($('#editPassword').val());
 
+        $('#editAlertBox').hide();
+
         if (!fullName || !username) {
-            showAlert('error', 'Full name and username are required.'); return;
+            showEditAlert('Full name and username are required.'); return;
         }
         if (password && password.length < 6) {
-            showAlert('error', 'New password must be at least 6 characters.'); return;
+            showEditAlert('New password must be at least 6 characters.'); return;
         }
 
         var $btn = $('#btnSaveEdit');
@@ -504,14 +522,14 @@
                     showAlert('success', '&#10003; ' + res.message);
                     loadUsers();
                 } else {
-                    showAlert('error', res.message);
+                    showEditAlert(res.message);
                 }
                 $btn.prop('disabled', false).text('Save Changes');
             },
             error: function (xhr) {
                 var msg = 'Failed to update user.';
                 try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e) {}
-                showAlert('error', msg);
+                showEditAlert(msg);
                 $btn.prop('disabled', false).text('Save Changes');
             }
         });

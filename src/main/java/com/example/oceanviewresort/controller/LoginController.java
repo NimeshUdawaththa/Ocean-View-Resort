@@ -63,10 +63,10 @@ public class LoginController extends HttpServlet {
             String redirectUrl;
             switch (user.getRole()) {
                 case User.ROLE_MANAGER:
-                    redirectUrl = request.getContextPath() + "/views/dashboard.jsp";
+                    redirectUrl = request.getContextPath() + "/views/manager-dashboard.jsp";
                     break;
                 case User.ROLE_RECEPTION:
-                    redirectUrl = request.getContextPath() + "/views/dashboard.jsp";
+                    redirectUrl = request.getContextPath() + "/views/reception-dashboard.jsp";
                     break;
                 default: // admin
                     redirectUrl = request.getContextPath() + "/views/dashboard.jsp";
