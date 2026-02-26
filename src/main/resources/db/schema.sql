@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default admin account  (password: admin123)
-INSERT INTO users (username, password, role, email, full_name)
-VALUES ('admin', 'admin123', 'admin', 'admin@oceanviewresort.com', 'Admin User')
+-- Insert default accounts (plain-text passwords for development)
+INSERT INTO users (username, password, role, email, full_name) VALUES
+    ('admin',     'admin123',     'admin',     'admin@oceanviewresort.com',     'Admin User'),
+    ('manager',   'manager123',   'manager',   'manager@oceanviewresort.com',   'Resort Manager'),
+    ('reception', 'reception123', 'reception', 'reception@oceanviewresort.com', 'Front Desk Staff')
 ON DUPLICATE KEY UPDATE username = username;

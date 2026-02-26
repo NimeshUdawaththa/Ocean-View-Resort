@@ -5,6 +5,11 @@ package com.example.oceanviewresort.model;
  */
 public class User {
 
+    // ── Role constants ───────────────────────────────────────
+    public static final String ROLE_ADMIN      = "admin";
+    public static final String ROLE_MANAGER    = "manager";
+    public static final String ROLE_RECEPTION  = "reception";
+
     private int    id;
     private String username;
     private String password;

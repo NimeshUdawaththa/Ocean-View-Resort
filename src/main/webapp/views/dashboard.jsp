@@ -157,6 +157,65 @@
         .card:nth-child(3) { border-left-color: #f4a22b; }
         .card:nth-child(4) { border-left-color: #e04b3a; }
 
+        /* ── Manager actions ── */
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0a4f6e;
+            margin: 36px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #dce8ee;
+        }
+
+        .action-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px 22px;
+            box-shadow: 0 4px 14px rgba(0,50,80,.08);
+            text-decoration: none;
+            color: #1e3a4a;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform .2s, box-shadow .2s;
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,50,80,.14);
+            border-color: #1aa3c8;
+        }
+
+        .action-card .ac-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0a4f6e, #1aa3c8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .action-card .ac-text h4 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 3px;
+        }
+
+        .action-card .ac-text p {
+            font-size: 12.5px;
+            color: #7a95a8;
+        }
+
         footer {
             text-align: center;
             padding: 32px;
@@ -214,6 +273,35 @@
                 <div class="value">62</div>
             </div>
         </div>
+
+        <% if ("admin".equals(role)) { %>
+        <!-- Admin quick actions -->
+        <div class="section-title">&#9881; Admin Actions</div>
+        <div class="action-cards">
+            <a href="<%= request.getContextPath() %>/views/manage-users.jsp" class="action-card">
+                <div class="ac-icon" style="background: linear-gradient(135deg,#7b2d8b,#a855f7);">&#9998;</div>
+                <div class="ac-text">
+                    <h4>Manage Staff</h4>
+                    <p>Edit or remove manager &amp; reception accounts</p>
+                </div>
+            </a>
+        </div>
+        <% } %>
+
+        <% if ("manager".equals(role)) { %>
+        <!-- Manager quick actions -->
+        <div class="section-title">&#9881; Manager Actions</div>
+        <div class="action-cards">
+            <a href="<%= request.getContextPath() %>/views/add-user.jsp" class="action-card">
+                <div class="ac-icon">&#128100;</div>
+                <div class="ac-text">
+                    <h4>Add Reception Staff</h4>
+                    <p>Create a new front-desk account</p>
+                </div>
+            </a>
+        </div>
+        <% } %>
+
     </main>
 
     <footer>OceanView Resort &copy; 2026 &mdash; Management System</footer>
