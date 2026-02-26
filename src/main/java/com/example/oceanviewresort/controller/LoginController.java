@@ -59,7 +59,18 @@ public class LoginController extends HttpServlet {
             session.setAttribute("fullName",     user.getFullName());
             session.setMaxInactiveInterval(30 * 60);   // 30 minutes
 
-            String redirectUrl = request.getContextPath() + "/views/dashboard.jsp";
+            // Role-based redirect
+            String redirectUrl;
+            switch (user.getRole()) {
+                case User.ROLE_MANAGER:
+                    redirectUrl = request.getContextPath() + "/views/manager-dashboard.jsp";
+                    break;
+                case User.ROLE_RECEPTION:
+                    redirectUrl = request.getContextPath() + "/views/reception-dashboard.jsp";
+                    break;
+                default: // admin
+                    redirectUrl = request.getContextPath() + "/views/dashboard.jsp";
+            }
 
             json.addProperty("success",     true);
             json.addProperty("role",        user.getRole());
