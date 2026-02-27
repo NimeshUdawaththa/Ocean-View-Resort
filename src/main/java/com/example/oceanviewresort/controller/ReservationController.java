@@ -21,6 +21,8 @@ import java.util.List;
  * GET  /api/reservations?id=X              → single reservation details
  * GET  /api/reservations?action=bill&id=X  → bill breakdown
  * POST /api/reservations  action=add       → create reservation
+ * POST /api/reservations  action=update    → edit dates/address  (manager/admin only)
+ * POST /api/reservations  action=cancel    → cancel reservation  (manager/admin only)
  *
  * Consumes {@link ReservationDTO} and {@link BillDTO} from the service layer.
  */
@@ -103,50 +105,114 @@ public class ReservationController extends HttpServlet {
         if (!authenticated(session)) { unauthorized(resp, out); return; }
 
         String action = nullToEmpty(req.getParameter("action"));
-        if (!"add".equals(action)) { badRequest(resp, out, "Unknown action."); return; }
+        String role   = (String) session.getAttribute("role");
+        boolean isManagerOrAdmin = User.ROLE_MANAGER.equals(role) || User.ROLE_ADMIN.equals(role);
 
-        String guestName     = nullToEmpty(req.getParameter("guestName")).trim();
-        String address       = nullToEmpty(req.getParameter("address")).trim();
-        String contactNumber = nullToEmpty(req.getParameter("contactNumber")).trim();
-        String roomType      = nullToEmpty(req.getParameter("roomType")).trim();
-        String checkIn       = nullToEmpty(req.getParameter("checkIn")).trim();
-        String checkOut      = nullToEmpty(req.getParameter("checkOut")).trim();
-        String roomIdParam   = nullToEmpty(req.getParameter("roomId")).trim();
+        // ── add ───────────────────────────────────────────────────────────────
+        if ("add".equals(action)) {
+            String guestName     = nullToEmpty(req.getParameter("guestName")).trim();
+            String address       = nullToEmpty(req.getParameter("address")).trim();
+            String contactNumber = nullToEmpty(req.getParameter("contactNumber")).trim();
+            String roomType      = nullToEmpty(req.getParameter("roomType")).trim();
+            String checkIn       = nullToEmpty(req.getParameter("checkIn")).trim();
+            String checkOut      = nullToEmpty(req.getParameter("checkOut")).trim();
+            String roomIdParam   = nullToEmpty(req.getParameter("roomId")).trim();
 
-        if (guestName.isEmpty() || contactNumber.isEmpty() ||
-            roomType.isEmpty() || checkIn.isEmpty() || checkOut.isEmpty()) {
-            badRequest(resp, out,
-                "Guest name, contact, room type, check-in and check-out are required.");
+            if (guestName.isEmpty() || contactNumber.isEmpty() ||
+                roomType.isEmpty() || checkIn.isEmpty() || checkOut.isEmpty()) {
+                badRequest(resp, out,
+                    "Guest name, contact, room type, check-in and check-out are required.");
+                return;
+            }
+
+            int userId = ((User) session.getAttribute("loggedInUser")).getId();
+            int roomIdInt = roomIdParam.isEmpty() ? 0 : parseId(roomIdParam);
+            String result = svc.addReservation(
+                guestName, address, contactNumber, roomType, checkIn, checkOut, userId, roomIdInt);
+
+            JsonObject json = new JsonObject();
+            if (result.startsWith("error:")) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                json.addProperty("success", false);
+                json.addProperty("message", result.substring(6));
+            } else {
+                // Mark the specific room as occupied
+                if (!roomIdParam.isEmpty()) {
+                    try {
+                        roomDAO.updateStatus(Integer.parseInt(roomIdParam), "occupied");
+                    } catch (NumberFormatException ignored) {}
+                }
+                ReservationDTO r = svc.getReservation(result);
+                json.addProperty("success", true);
+                json.addProperty("message", "Reservation " + result + " created successfully.");
+                json.addProperty("reservationNumber", result);
+                if (r != null) {
+                    BillDTO bill = svc.calculateBill(r.getId());
+                    if (bill != null) json.add("bill", buildBillJson(bill));
+                    json.add("reservation", buildResJson(r));
+                }
+            }
+            out.print(json);
             return;
         }
 
-        int userId = ((User) session.getAttribute("loggedInUser")).getId();
-        String result = svc.addReservation(
-            guestName, address, contactNumber, roomType, checkIn, checkOut, userId);
+        // ── update ────────────────────────────────────────────────────────────
+        if ("update".equals(action)) {
+            if (!isManagerOrAdmin) { unauthorized(resp, out); return; }
 
-        JsonObject json = new JsonObject();
-        if (result.startsWith("error:")) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            json.addProperty("success", false);
-            json.addProperty("message", result.substring(6));
-        } else {
-            // Mark the specific room as occupied
-            if (!roomIdParam.isEmpty()) {
-                try {
-                    roomDAO.updateStatus(Integer.parseInt(roomIdParam), "occupied");
-                } catch (NumberFormatException ignored) {}
+            int    id         = parseId(nullToEmpty(req.getParameter("id")));
+            String checkIn    = nullToEmpty(req.getParameter("checkIn")).trim();
+            String checkOut   = nullToEmpty(req.getParameter("checkOut")).trim();
+            String address    = nullToEmpty(req.getParameter("address")).trim();
+            String roomType   = nullToEmpty(req.getParameter("roomType")).trim();
+            String newRoomId  = nullToEmpty(req.getParameter("newRoomId")).trim();
+            String oldRoomId  = nullToEmpty(req.getParameter("oldRoomId")).trim();
+
+            if (id <= 0 || checkIn.isEmpty() || checkOut.isEmpty()) {
+                badRequest(resp, out, "Valid id, check-in and check-out are required.");
+                return;
             }
-            ReservationDTO r = svc.getReservation(result);
-            json.addProperty("success", true);
-            json.addProperty("message", "Reservation " + result + " created successfully.");
-            json.addProperty("reservationNumber", result);
-            if (r != null) {
-                BillDTO bill = svc.calculateBill(r.getId());
-                if (bill != null) json.add("bill", buildBillJson(bill));
-                json.add("reservation", buildResJson(r));
+
+            String err = svc.updateReservation(id, checkIn, checkOut, address, roomType,
+                    newRoomId.isEmpty() ? 0 : parseId(newRoomId));
+            JsonObject json = new JsonObject();
+            if (err != null) {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                json.addProperty("success", false);
+                json.addProperty("message", err.substring(6));
+            } else {
+                // Swap room statuses when room changed
+                if (!newRoomId.isEmpty() && !oldRoomId.isEmpty() && !newRoomId.equals(oldRoomId)) {
+                    try {
+                        roomDAO.updateStatus(Integer.parseInt(oldRoomId), "available");
+                        roomDAO.updateStatus(Integer.parseInt(newRoomId), "occupied");
+                    } catch (NumberFormatException ignored) {}
+                }
+                json.addProperty("success", true);
+                json.addProperty("message", "Reservation updated successfully.");
+                ReservationDTO r = svc.getReservationById(id);
+                if (r != null) json.add("reservation", buildResJson(r));
             }
+            out.print(json);
+            return;
         }
-        out.print(json);
+
+        // ── cancel ────────────────────────────────────────────────────────────
+        if ("cancel".equals(action)) {
+            if (!isManagerOrAdmin) { unauthorized(resp, out); return; }
+
+            int id = parseId(nullToEmpty(req.getParameter("id")));
+            if (id <= 0) { badRequest(resp, out, "Valid reservation id required."); return; }
+
+            boolean ok = svc.cancelReservation(id);
+            JsonObject json = new JsonObject();
+            json.addProperty("success", ok);
+            json.addProperty("message", ok ? "Reservation cancelled." : "Reservation not found or already closed.");
+            out.print(json);
+            return;
+        }
+
+        badRequest(resp, out, "Unknown action.");
     }
 
     // ── JSON builders from DTOs ──────────────────────────────────────────────
@@ -158,6 +224,7 @@ public class ReservationController extends HttpServlet {
         o.addProperty("address",           r.getAddress());
         o.addProperty("contactNumber",     r.getContactNumber());
         o.addProperty("roomType",          r.getRoomType());
+        o.addProperty("roomId",            r.getRoomId());
         o.addProperty("checkInDate",       r.getCheckInDate());
         o.addProperty("checkOutDate",      r.getCheckOutDate());
         o.addProperty("totalAmount",       r.getTotalAmount());

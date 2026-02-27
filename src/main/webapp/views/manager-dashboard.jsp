@@ -544,10 +544,63 @@
     </div>
 </div>
 
+<!-- ── Edit Reservation Modal ── -->
+<div class="modal-overlay" id="editResModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>&#9998; Edit Reservation</h2>
+            <button class="btn-close" onclick="closeEditResModal()">&#10005;</button>
+        </div>
+        <div id="editResAlertBox" class="modal-alert"></div>
+        <input type="hidden" id="erResId" />
+        <div class="form-row2" style="margin-bottom:8px;">
+            <div class="fg">
+                <label>Reservation #</label>
+                <div id="erResNumber" style="padding:8px 0;font-weight:700;color:#0a4f6e;font-size:14px;"></div>
+            </div>
+            <div class="fg">
+                <label>Guest</label>
+                <div id="erGuestName" style="padding:8px 0;font-size:13.5px;color:#3a5a6e;"></div>
+            </div>
+        </div>
+        <div class="form-row2">
+            <div class="fg"><label>Check-in Date <span class="req">*</span></label><input type="date" id="erCheckIn" /></div>
+            <div class="fg"><label>Check-out Date <span class="req">*</span></label><input type="date" id="erCheckOut" /></div>
+        </div>
+        <div class="fg">
+            <label>Room <span class="req">*</span></label>
+            <select id="erResRoom"><option value="">Loading rooms…</option></select>
+            <input type="hidden" id="erOldRoomId" />
+        </div>
+        <div class="fg"><label>Address</label><input type="text" id="erAddress" placeholder="Street, City" /></div>
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeEditResModal()">Close</button>
+            <button class="btn-msave" id="btnCancelResFromEdit" style="background:linear-gradient(135deg,#c0392b,#e04b3a);" onclick="cancelFromEditModal()">&#10006; Cancel Reservation</button>
+            <button class="btn-msave" id="btnSaveEditRes" onclick="saveEditReservation()">&#10003; Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Cancel Reservation Confirm ── -->
+<div class="modal-overlay" id="cancelResModal">
+    <div class="modal" style="max-width:440px;">
+        <div class="modal-header">
+            <h2 style="color:#c0392b;">&#9888; Cancel Reservation</h2>
+            <button class="btn-close" onclick="closeCancelResModal()">&#10005;</button>
+        </div>
+        <p style="color:#3a5a6e;font-size:14.5px;line-height:1.6;">Are you sure you want to cancel reservation <strong id="cancelResLabel"></strong>? This cannot be undone.</p>
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeCancelResModal()">Keep Reservation</button>
+            <button class="btn-msave" id="btnConfirmCancelRes" style="background:linear-gradient(135deg,#c0392b,#e04b3a);" onclick="confirmCancelReservation()">Cancel Reservation</button>
+        </div>
+    </div>
+</div>
+
 <script>
 var allReservations  = [];
 var activeFilter     = 'all';
 var currentDetailId  = null;
+var cancelResTarget  = null;
 var apiBase          = '<%= request.getContextPath() %>/api/reservations';
 var roomApiBase      = '<%= request.getContextPath() %>/api/rooms';
 var guestApiBase     = '<%= request.getContextPath() %>/api/guests';
@@ -738,6 +791,9 @@ function renderTable() {
             '<td onclick="event.stopPropagation()">' +
               '<button class="btn-view" onclick="openDetailModal(' + r.id + ')">Details</button>' +
               '<button class="btn-bill" onclick="openBillModal(' + r.id + ')">Bill</button>' +
+              (r.status === 'active' ?
+                '<button class="btn-edit" onclick="openEditResModal(' + r.id + ')">&#9998; Edit</button>'
+                : '') +
             '</td>' +
         '</tr>';
     }).join('');
@@ -926,9 +982,10 @@ function openDetailModal(id) {
 function closeDetailModal() { $('#detailModal').removeClass('show'); }
 
 function renderDetailContent(r) {
+    var badgeCls = r.status === 'active' ? 'badge-active' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
     var html = '<div>' +
         row('Reservation #', '<strong>' + esc(r.reservationNumber) + '</strong>') +
-        row('Status', '<span class="badge ' + (r.status === 'active' ? 'badge-active' : 'badge-checkedout') + '">' + esc(r.status) + '</span>') +
+        row('Status', '<span class="badge ' + badgeCls + '">' + esc(r.status) + '</span>') +
         row('Guest Name',   esc(r.guestName)) +
         row('Contact',      esc(r.contactNumber)) +
         row('Address',      esc(r.address) || '—') +
@@ -945,6 +1002,12 @@ function renderDetailContent(r) {
 function showBillFromDetail() {
     closeDetailModal();
     if (currentDetailId) openBillModal(currentDetailId);
+}
+
+function cancelFromEditModal() {
+    var id = parseInt($('#erResId').val());
+    closeEditResModal();
+    openCancelResModal(id);
 }
 
 // ── Bill Modal ───────────────────────────────────────────────────────────────
@@ -1257,11 +1320,141 @@ function gdetailRow(label, value) {
         '</tr>';
 }
 
+// ── Edit Reservation ─────────────────────────────────────────────────────────
+function openEditResModal(id) {
+    var r = allReservations.find(function(x){ return x.id === id; });
+    if (!r) return;
+    $('#erResId').val(r.id);
+    $('#erResNumber').text(r.reservationNumber);
+    $('#erGuestName').text(r.guestName + '  —  ' + r.contactNumber);
+    $('#erCheckIn').val(r.checkInDate);
+    $('#erCheckOut').val(r.checkOutDate);
+    $('#erAddress').val(r.address || '');
+    $('#editResAlertBox').hide();
+
+    // Find the currently assigned room using the stored room_id
+    var currentRoom = allRooms.find(function(rm){
+        return rm.id === r.roomId;
+    });
+    var oldRoomId = currentRoom ? currentRoom.id : '';
+    $('#erOldRoomId').val(oldRoomId);
+
+    // Populate room dropdown: available rooms + current room (always selectable)
+    var $sel = $('#erResRoom').html('<option value="">Loading rooms…</option>').prop('disabled', true);
+    $.ajax({
+        url: roomApiBase + '?status=available', type: 'GET', dataType: 'json',
+        success: function(res) {
+            $sel.prop('disabled', false);
+            var opts = '';
+            // Prepend current room so it is always an option
+            if (currentRoom) {
+                opts += '<option value="' + currentRoom.id + '" data-roomtype="' + esc(currentRoom.roomType) + '" selected>' +
+                        'Room ' + esc(currentRoom.roomNumber) + ' – ' + esc(currentRoom.roomType) +
+                        ' ($' + esc(currentRoom.ratePerNight) + '/night) [current]</option>';
+            }
+            if (res.success && res.rooms) {
+                res.rooms.forEach(function(rm) {
+                    // Skip if it's the same room as current (already added)
+                    if (currentRoom && rm.id === currentRoom.id) return;
+                    opts += '<option value="' + rm.id + '" data-roomtype="' + esc(rm.roomType) + '">' +
+                            'Room ' + esc(rm.roomNumber) + ' – ' + esc(rm.roomType) +
+                            ' ($' + esc(rm.ratePerNight) + '/night)</option>';
+                });
+            }
+            if (!opts) opts = '<option value="">No rooms available</option>';
+            $sel.html(opts);
+        },
+        error: function() {
+            $sel.prop('disabled', false).html('<option value="">Failed to load rooms</option>');
+        }
+    });
+
+    $('#editResModal').addClass('show');
+}
+function closeEditResModal() { $('#editResModal').removeClass('show'); }
+
+function saveEditReservation() {
+    var id        = parseInt($('#erResId').val());
+    var checkIn   = $('#erCheckIn').val();
+    var checkOut  = $('#erCheckOut').val();
+    var address   = $.trim($('#erAddress').val());
+    var newRoomId = $('#erResRoom').val();
+    var roomType  = $('#erResRoom option:selected').data('roomtype') || '';
+    var oldRoomId = $('#erOldRoomId').val();
+
+    $('#editResAlertBox').hide();
+    if (!checkIn || !checkOut) { showModalAlert('editResAlertBox', 'Check-in and check-out dates are required.'); return; }
+    if (checkOut <= checkIn)   { showModalAlert('editResAlertBox', 'Check-out must be after check-in.'); return; }
+    if (!newRoomId)            { showModalAlert('editResAlertBox', 'Please select a room.'); return; }
+
+    var $btn = $('#btnSaveEditRes').prop('disabled', true).text('Saving…');
+    $.ajax({
+        url: apiBase, type: 'POST',
+        data: { action: 'update', id: id, checkIn: checkIn, checkOut: checkOut,
+                address: address, roomType: roomType,
+                newRoomId: newRoomId, oldRoomId: oldRoomId },
+        dataType: 'json',
+        success: function(res) {
+            if (res.success) {
+                closeEditResModal();
+                showAlert('success', '\u2713 ' + res.message);
+                loadReservations();
+                loadRooms();
+            } else {
+                showModalAlert('editResAlertBox', res.message);
+            }
+            $btn.prop('disabled', false).text('\u2713 Save Changes');
+        },
+        error: function(xhr) {
+            var msg = 'Failed to update reservation.';
+            try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e) {}
+            showModalAlert('editResAlertBox', msg);
+            $btn.prop('disabled', false).text('\u2713 Save Changes');
+        }
+    });
+}
+
+// ── Cancel Reservation ─────────────────────────────────────────────────────
+function openCancelResModal(id) {
+    var r = allReservations.find(function(x){ return x.id === id; });
+    if (!r) return;
+    cancelResTarget = id;
+    $('#cancelResLabel').text(r.reservationNumber + ' — ' + r.guestName);
+    $('#cancelResModal').addClass('show');
+}
+function closeCancelResModal() { $('#cancelResModal').removeClass('show'); cancelResTarget = null; }
+
+function confirmCancelReservation() {
+    if (!cancelResTarget) return;
+    var $btn = $('#btnConfirmCancelRes').prop('disabled', true).text('Cancelling…');
+    $.ajax({
+        url: apiBase, type: 'POST',
+        data: { action: 'cancel', id: cancelResTarget },
+        dataType: 'json',
+        success: function(res) {
+            closeCancelResModal();
+            if (res.success) {
+                showAlert('success', '\u2713 ' + res.message);
+                loadReservations();
+            } else {
+                showAlert('error', res.message);
+            }
+            $btn.prop('disabled', false).text('Cancel Reservation');
+        },
+        error: function() {
+            showAlert('error', 'Failed to cancel reservation.');
+            $btn.prop('disabled', false).text('Cancel Reservation');
+            closeCancelResModal();
+        }
+    });
+}
+
 $('.modal-overlay').on('click', function(e) {
     if ($(e.target).hasClass('modal-overlay')) {
         closeAddModal(); closeDetailModal(); closeBillModal();
         closeRegisterGuestModal(); closeGuestDetailModal();
         closeEditGuestModal(); closeDeleteGuestModal();
+        closeEditResModal(); closeCancelResModal();
     }
 });
 

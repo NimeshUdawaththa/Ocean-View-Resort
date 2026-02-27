@@ -1,9 +1,11 @@
 package com.example.oceanviewresort.service;
 
 import com.example.oceanviewresort.dao.ReservationDAO;
+import com.example.oceanviewresort.dao.RoomDAO;
 import com.example.oceanviewresort.dto.BillDTO;
 import com.example.oceanviewresort.dto.ReservationDTO;
 import com.example.oceanviewresort.model.Reservation;
+import com.example.oceanviewresort.model.Room;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,6 +26,7 @@ public class ReservationService {
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
+    private final RoomDAO         roomDAO        = new RoomDAO();
 
     // ── Add Reservation ───────────────────────────────────────────────────────
     /**
@@ -32,7 +35,7 @@ public class ReservationService {
      */
     public String addReservation(String guestName, String address,
                                  String contactNumber, String roomType,
-                                 String checkIn, String checkOut, int createdBy) {
+                                 String checkIn, String checkOut, int createdBy, int roomId) {
         try {
             LocalDate ciDate = LocalDate.parse(checkIn,  FMT);
             LocalDate coDate = LocalDate.parse(checkOut, FMT);
@@ -40,7 +43,11 @@ public class ReservationService {
             if (!coDate.isAfter(ciDate))
                 return "error:Check-out must be after check-in.";
 
-            double rate = Reservation.getRateForRoom(roomType);
+            // Use the room's actual rate; fall back to hardcoded constant if room not found
+            Room room = roomId > 0 ? roomDAO.findById(roomId) : null;
+            double rate = (room != null)
+                ? room.getRatePerNight().doubleValue()
+                : Reservation.getRateForRoom(roomType);
             if (rate < 0)
                 return "error:Invalid room type.";
 
@@ -52,7 +59,7 @@ public class ReservationService {
             String resNum = generateReservationNumber();
 
             boolean ok = reservationDAO.insert(
-                resNum, guestName, address, contactNumber, roomType,
+                resNum, guestName, address, contactNumber, roomType, roomId,
                 ciDate, coDate,
                 BigDecimal.valueOf(total).setScale(2, RoundingMode.HALF_UP),
                 createdBy
@@ -96,13 +103,66 @@ public class ReservationService {
             .collect(Collectors.toList());
     }
 
+    // ── Update Reservation ────────────────────────────────────────────────────
+    /**
+     * Updates dates, address and room type (recalculates total) for an active reservation.
+     * @return null on success, or "error:<message>"
+     */
+    public String updateReservation(int id, String checkIn, String checkOut, String address, String roomType, int roomId) {
+        try {
+            Reservation existing = reservationDAO.findById(id);
+            if (existing == null) return "error:Reservation not found.";
+            if (!"active".equals(existing.getStatus()))
+                return "error:Only active reservations can be edited.";
+
+            LocalDate ciDate = LocalDate.parse(checkIn,  FMT);
+            LocalDate coDate = LocalDate.parse(checkOut, FMT);
+            if (!coDate.isAfter(ciDate))
+                return "error:Check-out must be after check-in.";
+
+            String effectiveType   = (roomType != null && !roomType.isEmpty())
+                ? roomType : existing.getRoomType();
+            int    effectiveRoomId = roomId > 0 ? roomId : existing.getRoomId();
+
+            // Use the room's actual rate; fall back to hardcoded constant
+            Room room = effectiveRoomId > 0 ? roomDAO.findById(effectiveRoomId) : null;
+            double rate = (room != null)
+                ? room.getRatePerNight().doubleValue()
+                : Reservation.getRateForRoom(effectiveType);
+            if (rate < 0) return "error:Invalid room type.";
+
+            long   nights   = ChronoUnit.DAYS.between(ciDate, coDate);
+            double subtotal = nights * rate;
+            double tax      = subtotal * Reservation.TAX_RATE;
+            double total    = subtotal + tax;
+
+            boolean ok = reservationDAO.update(
+                id, ciDate, coDate,
+                BigDecimal.valueOf(total).setScale(2, RoundingMode.HALF_UP),
+                address != null ? address : "",
+                effectiveType, effectiveRoomId);
+            return ok ? null : "error:Update failed.";
+        } catch (Exception e) {
+            System.err.println("[ReservationService] updateReservation error: " + e.getMessage());
+            return "error:" + e.getMessage();
+        }
+    }
+
+    // ── Cancel Reservation ────────────────────────────────────────────────────
+    public boolean cancelReservation(int id) {
+        return reservationDAO.cancel(id);
+    }
+
     // ── Bill calculation (returns BillDTO) ────────────────────────────────────
     public BillDTO calculateBill(int reservationId) {
         Reservation r = reservationDAO.findById(reservationId);
         if (r == null) return null;
 
         long   nights   = ChronoUnit.DAYS.between(r.getCheckInDate(), r.getCheckOutDate());
-        double rate     = Reservation.getRateForRoom(r.getRoomType());
+        Room   room     = r.getRoomId() > 0 ? roomDAO.findById(r.getRoomId()) : null;
+        double rate     = (room != null)
+            ? room.getRatePerNight().doubleValue()
+            : Reservation.getRateForRoom(r.getRoomType());
         double subtotal = nights * rate;
         double tax      = subtotal * Reservation.TAX_RATE;
         double total    = subtotal + tax;
@@ -134,6 +194,7 @@ public class ReservationService {
             r.getAddress()       != null ? r.getAddress()                  : "",
             r.getContactNumber(),
             r.getRoomType(),
+            r.getRoomId(),
             r.getCheckInDate()   != null ? r.getCheckInDate().toString()   : "",
             r.getCheckOutDate()  != null ? r.getCheckOutDate().toString()  : "",
             r.getTotalAmount()   != null ? r.getTotalAmount().toPlainString() : "0.00",
