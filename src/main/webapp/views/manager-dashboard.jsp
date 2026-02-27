@@ -1436,6 +1436,7 @@ function confirmCancelReservation() {
             if (res.success) {
                 showAlert('success', '\u2713 ' + res.message);
                 loadReservations();
+                loadRooms();
             } else {
                 showAlert('error', res.message);
             }
@@ -1458,7 +1459,11 @@ $('.modal-overlay').on('click', function(e) {
     }
 });
 
-$(document).ready(function() { loadReservations(); loadRooms(); loadGuests(); });
+$(document).ready(function() {
+    loadReservations(); loadRooms(); loadGuests();
+    // Poll every 60 s so scheduler-driven status changes (checked_out, available) appear automatically
+    setInterval(function() { loadReservations(); loadRooms(); }, 60000);
+});
 </script>
 </body>
 </html>
