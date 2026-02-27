@@ -1105,19 +1105,62 @@ function saveGuest() {
 }
 
 function openGuestDetailModal(id) {
-    var g = allGuests.find(function(x){ return x.id === id; });
-    if (!g) return;
-    var html = '<table style="width:100%;border-collapse:collapse;">' +
-        gdetailRow('Full Name',      g.fullName) +
-        gdetailRow('Mobile Number',  g.mobileNumber) +
-        gdetailRow('Email',          g.email      || '—') +
-        gdetailRow('NIC / Passport', g.nicNumber  || '—') +
-        gdetailRow('Address',        g.address    || '—') +
-        gdetailRow('Notes',          g.notes      || '—') +
-        gdetailRow('Registered On',  (g.createdAt || '').substring(0,10)) +
-        '</table>';
-    $('#guestDetailContent').html(html);
+    $('#guestDetailContent').html('<div style="padding:20px;text-align:center;color:#8aacbc;">Loading…</div>');
     $('#guestDetailModal').addClass('show');
+    $.ajax({
+        url: guestApiBase + '?id=' + id, type: 'GET', dataType: 'json',
+        success: function(res) {
+            if (!res.success) { $('#guestDetailContent').html('<p style="color:#c0392b;">' + esc(res.message) + '</p>'); return; }
+            var g = res.guest;
+            var reservations = res.reservations || [];
+
+            var html = '<table style="width:100%;border-collapse:collapse;margin-bottom:18px;">' +
+                gdetailRow('Full Name',      g.fullName) +
+                gdetailRow('Mobile Number',  g.mobileNumber) +
+                gdetailRow('Email',          g.email      || '—') +
+                gdetailRow('NIC / Passport', g.nicNumber  || '—') +
+                gdetailRow('Address',        g.address    || '—') +
+                gdetailRow('Notes',          g.notes      || '—') +
+                gdetailRow('Registered On',  (g.createdAt || '').substring(0,10)) +
+                '</table>';
+
+            // Reservation history
+            html += '<div style="font-weight:700;color:#1a3c4e;font-size:12.5px;text-transform:uppercase;' +
+                    'letter-spacing:.5px;margin-bottom:8px;border-top:2px solid #dceef7;padding-top:14px;">' +
+                    '&#128203; Reservation History (' + reservations.length + ')</div>';
+            if (!reservations.length) {
+                html += '<div style="color:#aaa;font-size:13px;padding:8px 0;">No reservations found for this guest.</div>';
+            } else {
+                html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+                    '<thead><tr>' +
+                    '<th style="text-align:left;padding:7px 8px;background:#f0f7fb;color:#5d7a8a;font-weight:600;border-bottom:2px solid #dceef7;">Res #</th>' +
+                    '<th style="text-align:left;padding:7px 8px;background:#f0f7fb;color:#5d7a8a;font-weight:600;border-bottom:2px solid #dceef7;">Room</th>' +
+                    '<th style="text-align:left;padding:7px 8px;background:#f0f7fb;color:#5d7a8a;font-weight:600;border-bottom:2px solid #dceef7;">Check-in</th>' +
+                    '<th style="text-align:left;padding:7px 8px;background:#f0f7fb;color:#5d7a8a;font-weight:600;border-bottom:2px solid #dceef7;">Check-out</th>' +
+                    '<th style="text-align:right;padding:7px 8px;background:#f0f7fb;color:#5d7a8a;font-weight:600;border-bottom:2px solid #dceef7;">Total ($)</th>' +
+                    '<th style="text-align:center;padding:7px 8px;background:#f0f7fb;color:#5d7a8a;font-weight:600;border-bottom:2px solid #dceef7;">Status</th>' +
+                    '</tr></thead><tbody>';
+                reservations.forEach(function(r) {
+                    var badgeCss = r.status === 'active'
+                        ? 'background:#d5f5e3;color:#1e8449;'
+                        : 'background:#f0f0f0;color:#777;';
+                    html += '<tr>' +
+                        '<td style="padding:7px 8px;border-bottom:1px solid #eef4f8;color:#2980b9;font-weight:600;">' + esc(r.reservationNumber) + '</td>' +
+                        '<td style="padding:7px 8px;border-bottom:1px solid #eef4f8;">' + esc(r.roomType) + '</td>' +
+                        '<td style="padding:7px 8px;border-bottom:1px solid #eef4f8;">' + esc(r.checkInDate) + '</td>' +
+                        '<td style="padding:7px 8px;border-bottom:1px solid #eef4f8;">' + esc(r.checkOutDate) + '</td>' +
+                        '<td style="padding:7px 8px;border-bottom:1px solid #eef4f8;text-align:right;font-weight:600;">$' + esc(r.totalAmount) + '</td>' +
+                        '<td style="padding:7px 8px;border-bottom:1px solid #eef4f8;text-align:center;"><span style="' + badgeCss + 'border-radius:4px;padding:2px 8px;font-size:11.5px;font-weight:600;">' + esc(r.status) + '</span></td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+            $('#guestDetailContent').html(html);
+        },
+        error: function() {
+            $('#guestDetailContent').html('<p style="color:#c0392b;">Failed to load guest details.</p>');
+        }
+    });
 }
 function closeGuestDetailModal() { $('#guestDetailModal').removeClass('show'); }
 

@@ -1,8 +1,10 @@
 package com.example.oceanviewresort.controller;
 
 import com.example.oceanviewresort.dto.GuestDTO;
+import com.example.oceanviewresort.dto.ReservationDTO;
 import com.example.oceanviewresort.model.User;
 import com.example.oceanviewresort.service.GuestService;
+import com.example.oceanviewresort.service.ReservationService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import jakarta.servlet.annotation.WebServlet;
@@ -29,7 +31,8 @@ import java.util.List;
 @WebServlet("/api/guests")
 public class GuestController extends HttpServlet {
 
-    private final GuestService svc = new GuestService();
+    private final GuestService       svc     = new GuestService();
+    private final ReservationService  resSvc  = new ReservationService();
 
     // ── GET ───────────────────────────────────────────────────────────────────
     @Override
@@ -54,8 +57,15 @@ public class GuestController extends HttpServlet {
             if (id <= 0) { badRequest(resp, out, "Invalid guest id."); return; }
             GuestDTO g = svc.findById(id);
             if (g == null) { notFound(resp, out, "Guest not found."); return; }
+
+            // Include reservation history matched by the guest's mobile number
+            List<ReservationDTO> history = resSvc.getByContactNumber(g.getMobileNumber());
+            JsonArray resArr = new JsonArray();
+            for (ReservationDTO r : history) resArr.add(reservationJson(r));
+
             j.addProperty("success", true);
             j.add("guest", guestJson(g));
+            j.add("reservations", resArr);
             out.print(j);
             return;
         }
@@ -196,6 +206,19 @@ public class GuestController extends HttpServlet {
         o.addProperty("notes",        g.getNotes());
         o.addProperty("createdBy",    g.getCreatedBy());
         o.addProperty("createdAt",    g.getCreatedAt());
+        return o;
+    }
+
+    // ── JSON builder from ReservationDTO ─────────────────────────────────────
+    private JsonObject reservationJson(ReservationDTO r) {
+        JsonObject o = new JsonObject();
+        o.addProperty("id",                r.getId());
+        o.addProperty("reservationNumber", r.getReservationNumber());
+        o.addProperty("roomType",          r.getRoomType());
+        o.addProperty("checkInDate",       r.getCheckInDate());
+        o.addProperty("checkOutDate",      r.getCheckOutDate());
+        o.addProperty("totalAmount",       r.getTotalAmount());
+        o.addProperty("status",            r.getStatus());
         return o;
     }
 

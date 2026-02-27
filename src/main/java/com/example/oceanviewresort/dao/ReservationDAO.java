@@ -87,6 +87,24 @@ public class ReservationDAO {
         return find(userId);
     }
 
+    // ── Find by contact number ──────────────────────────────────────────
+    public List<Reservation> findByContactNumber(String contactNumber) {
+        List<Reservation> list = new ArrayList<>();
+        String sql = "SELECT r.*, u.full_name AS created_by_name " +
+                     "FROM reservations r LEFT JOIN users u ON r.created_by = u.id " +
+                     "WHERE r.contact_number = ? ORDER BY r.check_in_date DESC";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, contactNumber);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] findByContactNumber error: " + e.getMessage());
+        }
+        return list;
+    }
+
     // ── Shared query ──────────────────────────────────────────────────────────
     private List<Reservation> find(Integer userId) {
         List<Reservation> list = new ArrayList<>();
