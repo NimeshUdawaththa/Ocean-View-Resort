@@ -78,6 +78,44 @@ public class ReservationDAO {
         }
     }
 
+    // ── Expire checked-out reservations (called by scheduler) ─────────────────
+    /**
+     * Finds every active reservation whose check-out date is in the past,
+     * marks it as 'checked_out', and frees its room back to 'available'.
+     * @return number of reservations expired
+     */
+    public int expireCheckedOut() {
+        String freeRoomsSql =
+            "UPDATE rooms SET status = 'available' " +
+            "WHERE id IN (" +
+            "  SELECT room_id FROM reservations " +
+            "  WHERE status = 'active' AND check_out_date < CURDATE()" +
+            "  AND room_id IS NOT NULL AND room_id > 0)";
+        String expireSql =
+            "UPDATE reservations SET status = 'checked_out' " +
+            "WHERE status = 'active' AND check_out_date < CURDATE()";
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try (Statement st = conn.createStatement()) {
+                st.executeUpdate(freeRoomsSql);
+                int affected = st.executeUpdate(expireSql);
+                conn.commit();
+                if (affected > 0)
+                    System.out.println("[ReservationDAO] Expired " + affected + " checked-out reservation(s).");
+                return affected;
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("[ReservationDAO] expireCheckedOut error: " + e.getMessage());
+                return 0;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] expireCheckedOut connection error: " + e.getMessage());
+            return 0;
+        }
+    }
+
     // ── Find by reservation number ────────────────────────────────────────────
     public Reservation findByNumber(String reservationNumber) {
         String sql = "SELECT r.*, u.full_name AS created_by_name " +
