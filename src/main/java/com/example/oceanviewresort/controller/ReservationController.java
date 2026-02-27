@@ -79,6 +79,8 @@ public class ReservationController extends HttpServlet {
         }
 
         // ── list ─────────────────────────────────────────────
+        // Expire any past-checkout reservations before returning data
+        svc.expireCheckedOut();
         List<ReservationDTO> list;
         if (User.ROLE_ADMIN.equals(role) || User.ROLE_MANAGER.equals(role)) {
             list = svc.getAllReservations();

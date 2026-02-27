@@ -509,7 +509,11 @@ $('.modal-overlay').on('click', function(e) {
     }
 });
 
-$(document).ready(function() { loadReservations(); });
+$(document).ready(function() {
+    loadReservations();
+    // Poll every 60 s so scheduler-driven status changes (checked_out) appear automatically
+    setInterval(function() { loadReservations(); }, 60000);
+});
 </script>
 </body>
 </html>

@@ -148,6 +148,12 @@ public class ReservationService {
         }
     }
 
+    // ── Expire checked-out reservations ─────────────────────────────────────
+    /** Marks past-checkout active reservations as checked_out and frees their rooms. */
+    public void expireCheckedOut() {
+        reservationDAO.expireCheckedOut();
+    }
+
     // ── Cancel Reservation ────────────────────────────────────────────────────
     public boolean cancelReservation(int id) {
         Reservation r = reservationDAO.findById(id);
