@@ -767,7 +767,7 @@ function openAddModal() {
             if (res.success && res.rooms.length) {
                 var opts = '<option value="">-- Select a room --</option>';
                 res.rooms.forEach(function(r) {
-                    opts += '<option value="' + esc(r.roomType) + '">' +
+                    opts += '<option value="' + r.id + '" data-roomtype="' + esc(r.roomType) + '">' +
                             'Room ' + esc(r.roomNumber) + ' – ' + esc(r.roomType) +
                             ' ($' + esc(r.ratePerNight) + '/night)</option>';
                 });
@@ -864,12 +864,13 @@ function saveReservation() {
     if (!selectedGuest) {
         showModalAlert('addAlertBox', 'Please find and select a registered guest first.'); return;
     }
-    var roomType = $('#roomType').val();
+    var roomId   = $('#roomType').val();
+    var roomType = $('#roomType option:selected').data('roomtype');
     var checkIn  = $('#checkIn').val();
     var checkOut = $('#checkOut').val();
 
     $('#addAlertBox').hide();
-    if (!roomType || !checkIn || !checkOut) {
+    if (!roomId || !checkIn || !checkOut) {
         showModalAlert('addAlertBox', 'Please select a room and set check-in / check-out dates.'); return;
     }
     if (checkOut <= checkIn) {
@@ -885,6 +886,7 @@ function saveReservation() {
                 guestName:     selectedGuest.fullName,
                 contactNumber: selectedGuest.mobileNumber,
                 roomType:      roomType,
+                roomId:        roomId,
                 address:       selectedGuest.address || '',
                 checkIn:       checkIn,
                 checkOut:      checkOut },
@@ -894,6 +896,7 @@ function saveReservation() {
                 closeAddModal();
                 showAlert('success', '✓ ' + res.message);
                 loadReservations();
+                loadRooms();
                 if (res.bill) setTimeout(function(){ showBillData(res.bill); }, 400);
             } else {
                 showModalAlert('addAlertBox', res.message);

@@ -328,7 +328,7 @@ function openAddModal() {
             if (res.success && res.rooms.length) {
                 var opts = '<option value="">-- Select a room --</option>';
                 res.rooms.forEach(function(r) {
-                    opts += '<option value="' + esc(r.roomType) + '">' +
+                    opts += '<option value="' + r.id + '" data-roomtype="' + esc(r.roomType) + '">' +
                             'Room ' + esc(r.roomNumber) + ' – ' + esc(r.roomType) +
                             ' ($' + esc(r.ratePerNight) + '/night)</option>';
                 });
@@ -349,13 +349,14 @@ function closeAddModal() { $('#addModal').removeClass('show'); }
 function saveReservation() {
     var guestName     = $.trim($('#guestName').val());
     var contactNumber = $.trim($('#contactNumber').val());
-    var roomType      = $('#roomType').val();
+    var roomId        = $('#roomType').val();
+    var roomType      = $('#roomType option:selected').data('roomtype');
     var address       = $.trim($('#address').val());
     var checkIn       = $('#checkIn').val();
     var checkOut      = $('#checkOut').val();
 
     $('#addAlertBox').hide();
-    if (!guestName || !contactNumber || !roomType || !checkIn || !checkOut) {
+    if (!guestName || !contactNumber || !roomId || !checkIn || !checkOut) {
         showModalAlert('addAlertBox', 'Please fill in all required fields.'); return;
     }
     if (checkOut <= checkIn) {
@@ -368,7 +369,7 @@ function saveReservation() {
     $.ajax({
         url: apiBase, type: 'POST',
         data: { action: 'add', guestName: guestName, contactNumber: contactNumber,
-                roomType: roomType, address: address, checkIn: checkIn, checkOut: checkOut },
+                roomType: roomType, roomId: roomId, address: address, checkIn: checkIn, checkOut: checkOut },
         dataType: 'json',
         success: function(res) {
             if (res.success) {

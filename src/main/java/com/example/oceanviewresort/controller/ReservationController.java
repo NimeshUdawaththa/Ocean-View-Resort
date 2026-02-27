@@ -1,5 +1,6 @@
 package com.example.oceanviewresort.controller;
 
+import com.example.oceanviewresort.dao.RoomDAO;
 import com.example.oceanviewresort.dto.BillDTO;
 import com.example.oceanviewresort.dto.ReservationDTO;
 import com.example.oceanviewresort.model.User;
@@ -26,7 +27,8 @@ import java.util.List;
 @WebServlet(name = "reservationController", value = "/api/reservations")
 public class ReservationController extends HttpServlet {
 
-    private final ReservationService svc = new ReservationService();
+    private final ReservationService svc     = new ReservationService();
+    private final RoomDAO              roomDAO = new RoomDAO();
 
     // ── GET ──────────────────────────────────────────────────────────────────
     @Override
@@ -109,6 +111,7 @@ public class ReservationController extends HttpServlet {
         String roomType      = nullToEmpty(req.getParameter("roomType")).trim();
         String checkIn       = nullToEmpty(req.getParameter("checkIn")).trim();
         String checkOut      = nullToEmpty(req.getParameter("checkOut")).trim();
+        String roomIdParam   = nullToEmpty(req.getParameter("roomId")).trim();
 
         if (guestName.isEmpty() || contactNumber.isEmpty() ||
             roomType.isEmpty() || checkIn.isEmpty() || checkOut.isEmpty()) {
@@ -127,6 +130,12 @@ public class ReservationController extends HttpServlet {
             json.addProperty("success", false);
             json.addProperty("message", result.substring(6));
         } else {
+            // Mark the specific room as occupied
+            if (!roomIdParam.isEmpty()) {
+                try {
+                    roomDAO.updateStatus(Integer.parseInt(roomIdParam), "occupied");
+                } catch (NumberFormatException ignored) {}
+            }
             ReservationDTO r = svc.getReservation(result);
             json.addProperty("success", true);
             json.addProperty("message", "Reservation " + result + " created successfully.");
