@@ -21,6 +21,8 @@ import java.util.List;
  * GET  /api/guests?email=X            → lookup guest by email
  * GET  /api/guests?keyword=X          → search guests (name/mobile/email/NIC)
  * POST /api/guests  action=register   → register a new guest
+ * POST /api/guests  action=update     → update an existing guest
+ * POST /api/guests  action=delete     → delete a guest by id
  *
  * Consumes {@link GuestDTO} objects from the service layer.
  */
@@ -135,6 +137,45 @@ public class GuestController extends HttpServlet {
                 j.addProperty("success", false);
                 j.addProperty("message", error);
             }
+
+        } else if ("update".equals(action)) {
+            int    id           = parseInt(nullToEmpty(req.getParameter("id")), -1);
+            String fullName     = nullToEmpty(req.getParameter("fullName")).trim();
+            String mobileNumber = nullToEmpty(req.getParameter("mobileNumber")).trim();
+            String email        = nullToEmpty(req.getParameter("email")).trim();
+            String address      = nullToEmpty(req.getParameter("address")).trim();
+            String nicNumber    = nullToEmpty(req.getParameter("nicNumber")).trim();
+            String notes        = nullToEmpty(req.getParameter("notes")).trim();
+
+            if (id <= 0) { badRequest(resp, out, "Invalid guest id."); return; }
+
+            String error = svc.updateGuest(id, fullName, mobileNumber,
+                email.isEmpty() ? null : email, address, nicNumber, notes);
+
+            if (error == null) {
+                j.addProperty("success", true);
+                j.addProperty("message", "Guest updated successfully.");
+                GuestDTO g = svc.findById(id);
+                if (g != null) j.add("guest", guestJson(g));
+            } else {
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                j.addProperty("success", false);
+                j.addProperty("message", error);
+            }
+
+        } else if ("delete".equals(action)) {
+            int id = parseInt(nullToEmpty(req.getParameter("id")), -1);
+            if (id <= 0) { badRequest(resp, out, "Invalid guest id."); return; }
+            boolean deleted = svc.deleteGuest(id);
+            if (deleted) {
+                j.addProperty("success", true);
+                j.addProperty("message", "Guest deleted successfully.");
+            } else {
+                resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                j.addProperty("success", false);
+                j.addProperty("message", "Guest not found or already deleted.");
+            }
+
         } else {
             badRequest(resp, out, "Unknown action.");
             return;
