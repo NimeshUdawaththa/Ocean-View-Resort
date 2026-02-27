@@ -90,6 +90,12 @@ public class ReservationService {
             .collect(Collectors.toList());
     }
 
+    public List<ReservationDTO> getByContactNumber(String contactNumber) {
+        return reservationDAO.findByContactNumber(contactNumber).stream()
+            .map(this::toDTO)
+            .collect(Collectors.toList());
+    }
+
     // ── Bill calculation (returns BillDTO) ────────────────────────────────────
     public BillDTO calculateBill(int reservationId) {
         Reservation r = reservationDAO.findById(reservationId);
