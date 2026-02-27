@@ -51,6 +51,20 @@ INSERT INTO rooms (room_number, room_type, description, rate_per_night, status, 
     ('402', 'Ocean View Suite', 'Premium ocean-facing suite with panoramic views',   300.00, 'available', 4)
 ON DUPLICATE KEY UPDATE room_number = room_number;
 
+-- Guests table
+CREATE TABLE IF NOT EXISTS guests (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    full_name      VARCHAR(100) NOT NULL,
+    mobile_number  VARCHAR(30)  NOT NULL UNIQUE,
+    email          VARCHAR(100) UNIQUE,
+    address        VARCHAR(255),
+    nic_number     VARCHAR(50),
+    notes          TEXT,
+    created_by     INT,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Reservations table
 CREATE TABLE IF NOT EXISTS reservations (
     id                 INT AUTO_INCREMENT PRIMARY KEY,
