@@ -1,5 +1,6 @@
 package com.example.oceanviewresort.controller;
 
+import com.example.oceanviewresort.dto.UserDTO;
 import com.example.oceanviewresort.model.User;
 import com.example.oceanviewresort.service.UserService;
 import com.google.gson.JsonArray;
@@ -15,9 +16,11 @@ import java.util.Set;
 /**
  * Admin-only user management API.
  *
- * GET  /api/users            → JSON list of all manager + reception users
- * POST /api/users  action=update  → update a user record
- * POST /api/users  action=delete  → delete a user by id
+ * GET  /api/users                    → JSON list of all manager + reception users
+ * POST /api/users  action=update     → update a user record
+ * POST /api/users  action=delete     → delete a user by id
+ *
+ * Consumes {@link UserDTO} objects produced by the service layer.
  */
 @WebServlet(name = "userManageController", value = "/api/users")
 public class UserManageController extends HttpServlet {
@@ -28,9 +31,7 @@ public class UserManageController extends HttpServlet {
 
     private final UserService userService = new UserService();
 
-    // ────────────────────────────────────────────────────────
-    // GET — list all managed users
-    // ────────────────────────────────────────────────────────
+    // ── GET — list all managed users ─────────────────────────────────────────
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -41,15 +42,15 @@ public class UserManageController extends HttpServlet {
 
         if (!isAdmin(request, response, out)) return;
 
-        List<User> users = userService.getManagedUsers();
+        List<UserDTO> users = userService.getManagedUsers();
 
         JsonArray array = new JsonArray();
-        for (User u : users) {
+        for (UserDTO u : users) {
             JsonObject obj = new JsonObject();
             obj.addProperty("id",       u.getId());
             obj.addProperty("username", u.getUsername());
             obj.addProperty("fullName", u.getFullName());
-            obj.addProperty("email",    u.getEmail() != null ? u.getEmail() : "");
+            obj.addProperty("email",    u.getEmail());
             obj.addProperty("role",     u.getRole());
             array.add(obj);
         }
@@ -60,9 +61,7 @@ public class UserManageController extends HttpServlet {
         out.print(result);
     }
 
-    // ────────────────────────────────────────────────────────
-    // POST — update or delete
-    // ────────────────────────────────────────────────────────
+    // ── POST — update or delete ───────────────────────────────────────────────
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
@@ -133,8 +132,7 @@ public class UserManageController extends HttpServlet {
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────
-
+    // ── Helpers ──────────────────────────────────────────────────────────────
     private boolean isAdmin(HttpServletRequest request,
                              HttpServletResponse response,
                              PrintWriter out) throws IOException {
@@ -148,7 +146,9 @@ public class UserManageController extends HttpServlet {
             out.print(json);
             return false;
         }
-        if (!User.ROLE_ADMIN.equals(session.getAttribute("role"))) {
+
+        String role = (String) session.getAttribute("role");
+        if (!User.ROLE_ADMIN.equals(role)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             json.addProperty("success", false);
             json.addProperty("message", "Access denied. Admin role required.");
@@ -159,17 +159,17 @@ public class UserManageController extends HttpServlet {
     }
 
     private void badRequest(HttpServletResponse response, PrintWriter out,
-                             JsonObject json, String msg) throws IOException {
+                            JsonObject json, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         json.addProperty("success", false);
-        json.addProperty("message", msg);
+        json.addProperty("message", message);
         out.print(json);
     }
 
-    private void handleResult(HttpServletResponse response, PrintWriter out, JsonObject json,
-                               String result, String okMsg, String dupMsg, String errMsg)
-            throws IOException {
-        switch (result) {
+    private void handleResult(HttpServletResponse response, PrintWriter out,
+                               JsonObject json, String res,
+                               String okMsg, String dupMsg, String errMsg) throws IOException {
+        switch (res) {
             case "ok":
                 json.addProperty("success", true);
                 json.addProperty("message", okMsg);
@@ -177,7 +177,7 @@ public class UserManageController extends HttpServlet {
             case "duplicate":
                 response.setStatus(HttpServletResponse.SC_CONFLICT);
                 json.addProperty("success", false);
-                json.addProperty("message", dupMsg != null ? dupMsg : "Conflict.");
+                json.addProperty("message", dupMsg != null ? dupMsg : "Duplicate entry.");
                 break;
             default:
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -187,11 +187,6 @@ public class UserManageController extends HttpServlet {
         out.print(json);
     }
 
-    private int parseId(String s) {
-        try { return Integer.parseInt(s); } catch (Exception e) { return -1; }
-    }
-
-    private String nullToEmpty(String s) {
-        return s == null ? "" : s;
-    }
+    private String nullToEmpty(String s) { return s != null ? s : ""; }
+    private int    parseId(String s)     { try { return Integer.parseInt(s); } catch (Exception e) { return -1; } }
 }

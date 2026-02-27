@@ -1,6 +1,6 @@
 package com.example.oceanviewresort.controller;
 
-import com.example.oceanviewresort.model.Room;
+import com.example.oceanviewresort.dto.RoomDTO;
 import com.example.oceanviewresort.service.RoomService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -12,13 +12,18 @@ import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * REST-style servlet for room management (manager-only).
+ * REST-style servlet for room management.
+ * GET (list / single) → all authenticated roles.
+ * POST (add / update / delete) → manager and admin only.
  *
- * GET  /api/rooms              → list all rooms as JSON
- * GET  /api/rooms?id=X         → single room
- * POST /api/rooms action=add   → add room
- * POST /api/rooms action=update → update room
- * POST /api/rooms action=delete → delete room
+ * GET  /api/rooms                → list all rooms
+ * GET  /api/rooms?id=X           → single room
+ * GET  /api/rooms?status=available → filtered list
+ * POST /api/rooms  action=add    → add room
+ * POST /api/rooms  action=update → update room
+ * POST /api/rooms  action=delete → delete room
+ *
+ * Consumes {@link RoomDTO} objects produced by the service layer.
  */
 @WebServlet("/api/rooms")
 public class RoomController extends HttpServlet {
@@ -33,17 +38,15 @@ public class RoomController extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         if (!authenticated(session)) { unauthorized(resp, out); return; }
-        // GET is readable by all authenticated roles (reception needs available rooms)
-        // POST (add/update/delete) remains manager-only
 
-        // ?status=available  →  filter by status
         String statusFilter = req.getParameter("status");
-        String idParam = req.getParameter("id");
+        String idParam      = req.getParameter("id");
+
         if (idParam != null) {
             // Single room
             try {
                 int id = Integer.parseInt(idParam);
-                Room r = svc.getRoomById(id);
+                RoomDTO r = svc.getRoomById(id);
                 JsonObject j = new JsonObject();
                 if (r != null) {
                     j.addProperty("success", true);
@@ -63,13 +66,14 @@ public class RoomController extends HttpServlet {
         }
 
         // All rooms (optionally filtered by status)
-        List<Room> rooms = (statusFilter != null && !statusFilter.isBlank())
-                ? svc.getRoomsByStatus(statusFilter)
-                : svc.getAllRooms();
+        List<RoomDTO> rooms = (statusFilter != null && !statusFilter.isBlank())
+            ? svc.getRoomsByStatus(statusFilter)
+            : svc.getAllRooms();
+
         JsonObject j = new JsonObject();
         j.addProperty("success", true);
         JsonArray arr = new JsonArray();
-        for (Room r : rooms) arr.add(roomJson(r));
+        for (RoomDTO r : rooms) arr.add(roomJson(r));
         j.add("rooms", arr);
         out.print(j);
     }
@@ -82,21 +86,18 @@ public class RoomController extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         if (!authenticated(session)) { unauthorized(resp, out); return; }
-        if (!isManager(session))     { forbidden(resp, out); return; }
+        if (!isManager(session))     { forbidden(resp, out);    return; }
 
         String action = req.getParameter("action");
         JsonObject j  = new JsonObject();
 
         if ("add".equals(action)) {
-            String roomNumber   = req.getParameter("roomNumber");
-            String roomType     = req.getParameter("roomType");
-            String description  = req.getParameter("description");
-            String rateStr      = req.getParameter("ratePerNight");
-            String status       = req.getParameter("status");
-            String floorStr     = req.getParameter("floor");
-
-            double rate  = parseDouble(rateStr);
-            int    floor = parseInt(floorStr, 1);
+            String roomNumber  = req.getParameter("roomNumber");
+            String roomType    = req.getParameter("roomType");
+            String description = req.getParameter("description");
+            double rate        = parseDouble(req.getParameter("ratePerNight"));
+            String status      = req.getParameter("status");
+            int    floor       = parseInt(req.getParameter("floor"), 1);
 
             String err = svc.addRoom(roomNumber, roomType, description, rate, status, floor);
             if (err == null) {
@@ -108,13 +109,13 @@ public class RoomController extends HttpServlet {
             }
 
         } else if ("update".equals(action)) {
-            int    id           = parseInt(req.getParameter("id"), -1);
-            String roomNumber   = req.getParameter("roomNumber");
-            String roomType     = req.getParameter("roomType");
-            String description  = req.getParameter("description");
-            double rate         = parseDouble(req.getParameter("ratePerNight"));
-            String status       = req.getParameter("status");
-            int    floor        = parseInt(req.getParameter("floor"), 1);
+            int    id          = parseInt(req.getParameter("id"), -1);
+            String roomNumber  = req.getParameter("roomNumber");
+            String roomType    = req.getParameter("roomType");
+            String description = req.getParameter("description");
+            double rate        = parseDouble(req.getParameter("ratePerNight"));
+            String status      = req.getParameter("status");
+            int    floor       = parseInt(req.getParameter("floor"), 1);
 
             if (id <= 0) {
                 j.addProperty("success", false);
@@ -154,17 +155,17 @@ public class RoomController extends HttpServlet {
         out.print(j);
     }
 
-    // ── Helper: map Room → JsonObject ─────────────────────────────────────────
-    private JsonObject roomJson(Room r) {
+    // ── JSON builder from RoomDTO ─────────────────────────────────────────────
+    private JsonObject roomJson(RoomDTO r) {
         JsonObject o = new JsonObject();
         o.addProperty("id",           r.getId());
         o.addProperty("roomNumber",   r.getRoomNumber());
         o.addProperty("roomType",     r.getRoomType());
-        o.addProperty("description",  r.getDescription() != null ? r.getDescription() : "");
-        o.addProperty("ratePerNight", r.getRatePerNight() != null ? r.getRatePerNight().toPlainString() : "0");
+        o.addProperty("description",  r.getDescription());
+        o.addProperty("ratePerNight", r.getRatePerNight());
         o.addProperty("status",       r.getStatus());
         o.addProperty("floor",        r.getFloor());
-        o.addProperty("createdAt",    r.getCreatedAt() != null ? r.getCreatedAt() : "");
+        o.addProperty("createdAt",    r.getCreatedAt());
         return o;
     }
 
@@ -190,7 +191,6 @@ public class RoomController extends HttpServlet {
         j.addProperty("message", "Access denied. Manager role required.");
         out.print(j);
     }
-
     private double parseDouble(String s) {
         try { return Double.parseDouble(s); } catch (Exception e) { return 0; }
     }
