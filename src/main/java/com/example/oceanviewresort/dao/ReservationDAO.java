@@ -17,13 +17,13 @@ public class ReservationDAO {
 
     // ── Insert ────────────────────────────────────────────────────────────────
     public boolean insert(String resNum, String guestName, String address,
-                          String contactNumber, String roomType,
+                          String contactNumber, String roomType, int roomId,
                           LocalDate checkIn, LocalDate checkOut,
                           BigDecimal totalAmount, int createdBy) {
         String sql = "INSERT INTO reservations " +
-            "(reservation_number, guest_name, address, contact_number, room_type, " +
+            "(reservation_number, guest_name, address, contact_number, room_type, room_id, " +
             " check_in_date, check_out_date, total_amount, status, created_by) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)";
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, resNum);
@@ -31,14 +31,49 @@ public class ReservationDAO {
             ps.setString(3, address);
             ps.setString(4, contactNumber);
             ps.setString(5, roomType);
-            ps.setDate(6, Date.valueOf(checkIn));
-            ps.setDate(7, Date.valueOf(checkOut));
-            ps.setBigDecimal(8, totalAmount);
-            ps.setInt(9, createdBy);
+            ps.setInt(6, roomId);
+            ps.setDate(7, Date.valueOf(checkIn));
+            ps.setDate(8, Date.valueOf(checkOut));
+            ps.setBigDecimal(9, totalAmount);
+            ps.setInt(10, createdBy);
             ps.executeUpdate();
             return true;
         } catch (SQLException e) {
             System.err.println("[ReservationDAO] insert error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ── Update ────────────────────────────────────────────────────────────────
+    public boolean update(int id, LocalDate checkIn, LocalDate checkOut,
+                          BigDecimal totalAmount, String address, String roomType, int roomId) {
+        String sql = "UPDATE reservations SET check_in_date=?, check_out_date=?, " +
+                     "total_amount=?, address=?, room_type=?, room_id=? WHERE id=? AND status='active'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(checkIn));
+            ps.setDate(2, Date.valueOf(checkOut));
+            ps.setBigDecimal(3, totalAmount);
+            ps.setString(4, address);
+            ps.setString(5, roomType);
+            ps.setInt(6, roomId);
+            ps.setInt(7, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] update error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ── Cancel ────────────────────────────────────────────────────────────────
+    public boolean cancel(int id) {
+        String sql = "UPDATE reservations SET status='cancelled' WHERE id=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] cancel error: " + e.getMessage());
             return false;
         }
     }
@@ -138,6 +173,7 @@ public class ReservationDAO {
             rs.getString("address"),
             rs.getString("contact_number"),
             rs.getString("room_type"),
+            rs.getInt("room_id"),
             ci != null ? ci.toLocalDate() : null,
             co != null ? co.toLocalDate() : null,
             rs.getBigDecimal("total_amount"),

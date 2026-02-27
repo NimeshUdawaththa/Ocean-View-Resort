@@ -105,6 +105,20 @@ public class RoomDAO {
         return list;
     }
 
+    // ── Update status only ────────────────────────────────────────────────────
+    public boolean updateStatus(int id, String status) {
+        String sql = "UPDATE rooms SET status=? WHERE id=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[RoomDAO] updateStatus error: " + e.getMessage());
+            return false;
+        }
+    }
+
     // ── Find by status ────────────────────────────────────────────────────────
     public List<Room> findByStatus(String status) {
         List<Room> list = new ArrayList<>();

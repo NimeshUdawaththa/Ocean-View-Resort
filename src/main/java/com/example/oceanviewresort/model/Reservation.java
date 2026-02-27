@@ -14,6 +14,7 @@ public class Reservation {
     private String     address;
     private String     contactNumber;
     private String     roomType;
+    private int        roomId;
     private LocalDate  checkInDate;
     private LocalDate  checkOutDate;
     private BigDecimal totalAmount;
@@ -37,7 +38,7 @@ public class Reservation {
     public Reservation() {}
 
     public Reservation(int id, String reservationNumber, String guestName, String address,
-                       String contactNumber, String roomType,
+                       String contactNumber, String roomType, int roomId,
                        LocalDate checkInDate, LocalDate checkOutDate,
                        BigDecimal totalAmount, String status,
                        int createdBy, String createdByName, String createdAt) {
@@ -47,6 +48,7 @@ public class Reservation {
         this.address           = address;
         this.contactNumber     = contactNumber;
         this.roomType          = roomType;
+        this.roomId            = roomId;
         this.checkInDate       = checkInDate;
         this.checkOutDate      = checkOutDate;
         this.totalAmount       = totalAmount;
@@ -75,6 +77,7 @@ public class Reservation {
     public String     getAddress()           { return address; }
     public String     getContactNumber()     { return contactNumber; }
     public String     getRoomType()          { return roomType; }
+    public int        getRoomId()            { return roomId; }
     public LocalDate  getCheckInDate()       { return checkInDate; }
     public LocalDate  getCheckOutDate()      { return checkOutDate; }
     public BigDecimal getTotalAmount()       { return totalAmount; }
@@ -90,6 +93,7 @@ public class Reservation {
     public void setAddress(String address)                  { this.address = address; }
     public void setContactNumber(String contactNumber)      { this.contactNumber = contactNumber; }
     public void setRoomType(String roomType)                { this.roomType = roomType; }
+    public void setRoomId(int roomId)                       { this.roomId = roomId; }
     public void setCheckInDate(LocalDate checkInDate)       { this.checkInDate = checkInDate; }
     public void setCheckOutDate(LocalDate checkOutDate)     { this.checkOutDate = checkOutDate; }
     public void setTotalAmount(BigDecimal totalAmount)      { this.totalAmount = totalAmount; }
