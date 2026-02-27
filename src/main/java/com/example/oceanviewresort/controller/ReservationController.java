@@ -1,6 +1,7 @@
 package com.example.oceanviewresort.controller;
 
-import com.example.oceanviewresort.model.Reservation;
+import com.example.oceanviewresort.dto.BillDTO;
+import com.example.oceanviewresort.dto.ReservationDTO;
 import com.example.oceanviewresort.model.User;
 import com.example.oceanviewresort.service.ReservationService;
 import com.google.gson.JsonArray;
@@ -19,6 +20,8 @@ import java.util.List;
  * GET  /api/reservations?id=X              → single reservation details
  * GET  /api/reservations?action=bill&id=X  → bill breakdown
  * POST /api/reservations  action=add       → create reservation
+ *
+ * Consumes {@link ReservationDTO} and {@link BillDTO} from the service layer.
  */
 @WebServlet(name = "reservationController", value = "/api/reservations")
 public class ReservationController extends HttpServlet {
@@ -38,7 +41,7 @@ public class ReservationController extends HttpServlet {
         String role   = (String) session.getAttribute("role");
         int    userId = ((User) session.getAttribute("loggedInUser")).getId();
 
-        String action = nullToEmpty(req.getParameter("action"));
+        String action  = nullToEmpty(req.getParameter("action"));
         String idParam = nullToEmpty(req.getParameter("id"));
 
         // ── bill ─────────────────────────────────────────────
@@ -46,7 +49,7 @@ public class ReservationController extends HttpServlet {
             int id = parseId(idParam);
             if (id <= 0) { badRequest(resp, out, "Valid reservation id required."); return; }
 
-            ReservationService.BillResult bill = svc.calculateBill(id);
+            BillDTO bill = svc.calculateBill(id);
             if (bill == null) { notFound(resp, out, "Reservation not found."); return; }
 
             JsonObject json = new JsonObject();
@@ -60,8 +63,10 @@ public class ReservationController extends HttpServlet {
         if (!idParam.isEmpty()) {
             int id = parseId(idParam);
             if (id <= 0) { badRequest(resp, out, "Valid id required."); return; }
-            Reservation r = svc.getReservationById(id);
+
+            ReservationDTO r = svc.getReservationById(id);
             if (r == null) { notFound(resp, out, "Reservation not found."); return; }
+
             JsonObject json = new JsonObject();
             json.addProperty("success", true);
             json.add("reservation", buildResJson(r));
@@ -70,7 +75,7 @@ public class ReservationController extends HttpServlet {
         }
 
         // ── list ─────────────────────────────────────────────
-        List<Reservation> list;
+        List<ReservationDTO> list;
         if (User.ROLE_ADMIN.equals(role) || User.ROLE_MANAGER.equals(role)) {
             list = svc.getAllReservations();
         } else {
@@ -78,7 +83,7 @@ public class ReservationController extends HttpServlet {
         }
 
         JsonArray arr = new JsonArray();
-        for (Reservation r : list) arr.add(buildResJson(r));
+        for (ReservationDTO r : list) arr.add(buildResJson(r));
         JsonObject result = new JsonObject();
         result.addProperty("success", true);
         result.add("reservations", arr);
@@ -107,12 +112,14 @@ public class ReservationController extends HttpServlet {
 
         if (guestName.isEmpty() || contactNumber.isEmpty() ||
             roomType.isEmpty() || checkIn.isEmpty() || checkOut.isEmpty()) {
-            badRequest(resp, out, "Guest name, contact, room type, check-in and check-out are required.");
+            badRequest(resp, out,
+                "Guest name, contact, room type, check-in and check-out are required.");
             return;
         }
 
         int userId = ((User) session.getAttribute("loggedInUser")).getId();
-        String result = svc.addReservation(guestName, address, contactNumber, roomType, checkIn, checkOut, userId);
+        String result = svc.addReservation(
+            guestName, address, contactNumber, roomType, checkIn, checkOut, userId);
 
         JsonObject json = new JsonObject();
         if (result.startsWith("error:")) {
@@ -120,13 +127,12 @@ public class ReservationController extends HttpServlet {
             json.addProperty("success", false);
             json.addProperty("message", result.substring(6));
         } else {
-            // Fetch the full reservation to return it with bill
-            Reservation r = svc.getReservation(result);
+            ReservationDTO r = svc.getReservation(result);
             json.addProperty("success", true);
             json.addProperty("message", "Reservation " + result + " created successfully.");
             json.addProperty("reservationNumber", result);
             if (r != null) {
-                ReservationService.BillResult bill = svc.calculateBill(r.getId());
+                BillDTO bill = svc.calculateBill(r.getId());
                 if (bill != null) json.add("bill", buildBillJson(bill));
                 json.add("reservation", buildResJson(r));
             }
@@ -134,42 +140,41 @@ public class ReservationController extends HttpServlet {
         out.print(json);
     }
 
-    // ── JSON builders ────────────────────────────────────────────────────────
-    private JsonObject buildResJson(Reservation r) {
+    // ── JSON builders from DTOs ──────────────────────────────────────────────
+    private JsonObject buildResJson(ReservationDTO r) {
         JsonObject o = new JsonObject();
         o.addProperty("id",                r.getId());
         o.addProperty("reservationNumber", r.getReservationNumber());
         o.addProperty("guestName",         r.getGuestName());
-        o.addProperty("address",           r.getAddress() != null ? r.getAddress() : "");
+        o.addProperty("address",           r.getAddress());
         o.addProperty("contactNumber",     r.getContactNumber());
         o.addProperty("roomType",          r.getRoomType());
-        o.addProperty("checkInDate",       r.getCheckInDate()  != null ? r.getCheckInDate().toString()  : "");
-        o.addProperty("checkOutDate",      r.getCheckOutDate() != null ? r.getCheckOutDate().toString() : "");
-        o.addProperty("totalAmount",       r.getTotalAmount()  != null ? r.getTotalAmount().toPlainString() : "0.00");
+        o.addProperty("checkInDate",       r.getCheckInDate());
+        o.addProperty("checkOutDate",      r.getCheckOutDate());
+        o.addProperty("totalAmount",       r.getTotalAmount());
         o.addProperty("status",            r.getStatus());
         o.addProperty("createdBy",         r.getCreatedBy());
-        o.addProperty("createdByName",     r.getCreatedByName() != null ? r.getCreatedByName() : "");
-        o.addProperty("createdAt",         r.getCreatedAt() != null ? r.getCreatedAt() : "");
+        o.addProperty("createdByName",     r.getCreatedByName());
+        o.addProperty("createdAt",         r.getCreatedAt());
         return o;
     }
 
-    private JsonObject buildBillJson(ReservationService.BillResult b) {
-        Reservation r = b.reservation;
+    private JsonObject buildBillJson(BillDTO b) {
         JsonObject o = new JsonObject();
-        o.addProperty("reservationNumber", r.getReservationNumber());
-        o.addProperty("guestName",         r.getGuestName());
-        o.addProperty("address",           r.getAddress() != null ? r.getAddress() : "");
-        o.addProperty("contactNumber",     r.getContactNumber());
-        o.addProperty("roomType",          r.getRoomType());
-        o.addProperty("checkInDate",       r.getCheckInDate()  != null ? r.getCheckInDate().toString()  : "");
-        o.addProperty("checkOutDate",      r.getCheckOutDate() != null ? r.getCheckOutDate().toString() : "");
-        o.addProperty("nights",            b.nights);
-        o.addProperty("ratePerNight",      String.format("%.2f", b.ratePerNight));
-        o.addProperty("subtotal",          String.format("%.2f", b.subtotal));
-        o.addProperty("taxRate",           String.format("%.0f%%", Reservation.TAX_RATE * 100));
-        o.addProperty("tax",               String.format("%.2f", b.tax));
-        o.addProperty("total",             String.format("%.2f", b.total));
-        o.addProperty("status",            r.getStatus());
+        o.addProperty("reservationNumber", b.getReservationNumber());
+        o.addProperty("guestName",         b.getGuestName());
+        o.addProperty("address",           b.getAddress());
+        o.addProperty("contactNumber",     b.getContactNumber());
+        o.addProperty("roomType",          b.getRoomType());
+        o.addProperty("checkInDate",       b.getCheckInDate());
+        o.addProperty("checkOutDate",      b.getCheckOutDate());
+        o.addProperty("nights",            b.getNights());
+        o.addProperty("ratePerNight",      b.getRatePerNight());
+        o.addProperty("subtotal",          b.getSubtotal());
+        o.addProperty("taxRate",           b.getTaxRate());
+        o.addProperty("tax",               b.getTax());
+        o.addProperty("total",             b.getTotal());
+        o.addProperty("status",            b.getStatus());
         return o;
     }
 
@@ -177,28 +182,26 @@ public class ReservationController extends HttpServlet {
     private boolean authenticated(HttpSession s) {
         return s != null && s.getAttribute("loggedInUser") != null;
     }
-
     private void unauthorized(HttpServletResponse resp, PrintWriter out) throws IOException {
         resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         JsonObject j = new JsonObject();
         j.addProperty("success", false); j.addProperty("message", "Not authenticated.");
         out.print(j);
     }
-
-    private void badRequest(HttpServletResponse resp, PrintWriter out, String msg) throws IOException {
+    private void badRequest(HttpServletResponse resp, PrintWriter out, String msg)
+            throws IOException {
         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         JsonObject j = new JsonObject();
         j.addProperty("success", false); j.addProperty("message", msg);
         out.print(j);
     }
-
-    private void notFound(HttpServletResponse resp, PrintWriter out, String msg) throws IOException {
+    private void notFound(HttpServletResponse resp, PrintWriter out, String msg)
+            throws IOException {
         resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
         JsonObject j = new JsonObject();
         j.addProperty("success", false); j.addProperty("message", msg);
         out.print(j);
     }
-
-    private int    parseId(String s)      { try { return Integer.parseInt(s); } catch (Exception e) { return -1; } }
-    private String nullToEmpty(String s)  { return s == null ? "" : s; }
+    private String nullToEmpty(String s) { return s != null ? s : ""; }
+    private int    parseId(String s)     { try { return Integer.parseInt(s); } catch (Exception e) { return -1; } }
 }

@@ -196,6 +196,10 @@
             <div class="stat-icon" style="background:#f3e8ff;">&#127968;</div>
             <div class="stat-info"><div class="val" id="statRoomsAvail">–</div><div class="lbl">Rooms Available</div></div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fef9e7;">&#128101;</div>
+            <div class="stat-info"><div class="val" id="statGuests">–</div><div class="lbl">Registered Guests</div></div>
+        </div>
     </div>
 
     <!-- Quick Actions -->
@@ -213,6 +217,10 @@
             <div class="ac-icon" style="background:linear-gradient(135deg,#7b2ff7,#9b5de5);">&#127968;</div>
             <div class="ac-text"><h4>Add Room</h4><p>Register a new hotel room</p></div>
         </div>
+        <div class="action-card" onclick="openRegisterGuestModal()">
+            <div class="ac-icon" style="background:linear-gradient(135deg,#e67e22,#f39c12);">&#128101;</div>
+            <div class="ac-text"><h4>Register Guest</h4><p>Add a guest profile</p></div>
+        </div>
     </div>
 
     <!-- Rooms Section -->
@@ -224,6 +232,26 @@
         <div class="table-card">
             <div id="roomTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading rooms…</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guests Section -->
+    <div style="margin-top:30px;">
+        <div class="section-header">
+            <div class="section-title">&#128101; Registered Guests</div>
+            <button class="btn-add-res" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
+        </div>
+        <div class="table-card" style="margin-bottom:24px;">
+            <div class="table-toolbar">
+                <div class="toolbar-title">Guest Directory</div>
+                <div class="search-box">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="guestSearchInput" placeholder="Name, mobile or email…" oninput="renderGuestTable()" />
+                </div>
+            </div>
+            <div id="guestTableContainer">
+                <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading guests…</p></div>
             </div>
         </div>
     </div>
@@ -262,21 +290,40 @@
             <button class="btn-close no-print" onclick="closeAddModal()">&#10005;</button>
         </div>
         <div id="addAlertBox" class="modal-alert"></div>
-        <form id="addForm" novalidate>
-            <div class="fg"><label>Guest Name <span class="req">*</span></label><input type="text" id="guestName" placeholder="Full name of guest" /></div>
-            <div class="form-row2">
-                <div class="fg"><label>Contact Number <span class="req">*</span></label><input type="text" id="contactNumber" placeholder="e.g. +94 71 234 5678" /></div>
-                <div class="fg">
-                    <label>Room <span class="req">*</span></label>
-                    <select id="roomType">
-                        <option value="">Loading available rooms…</option>
-                    </select>
-                </div>
+
+        <!-- Step 1: Find registered guest -->
+        <div id="guestLookupSection" style="background:#f0f7fb;border:1.5px solid #b8d4e8;border-radius:8px;padding:14px;margin-bottom:12px;">
+            <div style="font-weight:700;color:#1a3c4e;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">&#128101; Step 1 &mdash; Find Registered Guest <span class="req">*</span></div>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="resGuestSearch" placeholder="Name, mobile, email or NIC / passport…" style="flex:1;" onkeydown="if(event.key==='Enter')searchGuestForRes();" />
+                <button class="btn-msave" style="white-space:nowrap;padding:0 16px;" onclick="searchGuestForRes()">&#128269; Find</button>
             </div>
-            <div class="fg"><label>Address</label><textarea id="address" placeholder="Guest address (optional)"></textarea></div>
+            <div id="guestLookupResult" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- Selected guest banner (shown after selection) -->
+        <div id="selectedGuestBanner" style="display:none;background:#eaf6f0;border:1.5px solid #27ae60;border-radius:8px;padding:10px 14px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div>
+                    <div style="font-weight:700;color:#196f3d;font-size:14px;" id="selectedGuestInfo"></div>
+                    <div style="color:#5d8a6f;font-size:12px;margin-top:2px;" id="selectedGuestSubInfo"></div>
+                </div>
+                <button onclick="clearGuestForRes()" style="background:none;border:1px solid #c0392b;color:#c0392b;cursor:pointer;font-size:12px;font-weight:600;padding:4px 10px;border-radius:5px;">Change Guest</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Reservation details -->
+        <form id="addForm" novalidate>
+            <input type="hidden" id="guestName" />
+            <input type="hidden" id="contactNumber" />
+            <input type="hidden" id="address" />
             <div class="form-row2">
                 <div class="fg"><label>Check-in Date <span class="req">*</span></label><input type="date" id="checkIn" /></div>
                 <div class="fg"><label>Check-out Date <span class="req">*</span></label><input type="date" id="checkOut" /></div>
+            </div>
+            <div class="fg">
+                <label>Room <span class="req">*</span></label>
+                <select id="roomType"><option value="">Loading available rooms…</option></select>
             </div>
         </form>
         <div class="modal-footer">
@@ -413,15 +460,59 @@
     </div>
 </div>
 
+<!-- ── Register Guest Modal ── -->
+<div class="modal-overlay" id="guestModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>&#128101; Register New Guest</h2>
+            <button class="btn-close" onclick="closeRegisterGuestModal()">&#10005;</button>
+        </div>
+        <div id="guestAlertBox" class="modal-alert" style="display:none;"></div>
+        <form id="guestForm" onsubmit="return false;">
+            <div class="form-row2">
+                <div class="fg"><label>Full Name <span class="req">*</span></label><input type="text" id="gFullName" placeholder="e.g. John Silva" /></div>
+                <div class="fg"><label>Mobile Number <span class="req">*</span></label><input type="tel" id="gMobile" placeholder="e.g. 0771234567" /></div>
+            </div>
+            <div class="form-row2">
+                <div class="fg"><label>Email Address</label><input type="email" id="gEmail" placeholder="guest@example.com" /></div>
+                <div class="fg"><label>NIC / Passport No.</label><input type="text" id="gNic" placeholder="e.g. 199012345678" /></div>
+            </div>
+            <div class="fg"><label>Address</label><input type="text" id="gAddress" placeholder="Street, City" /></div>
+            <div class="fg"><label>Notes</label><textarea id="gNotes" rows="3" placeholder="Any additional notes about the guest…"></textarea></div>
+        </form>
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeRegisterGuestModal()">Cancel</button>
+            <button class="btn-msave" id="btnSaveGuest" onclick="saveGuest()">&#128101; Register Guest</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Guest Detail Modal ── -->
+<div class="modal-overlay" id="guestDetailModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>&#128101; Guest Details</h2>
+            <button class="btn-close" onclick="closeGuestDetailModal()">&#10005;</button>
+        </div>
+        <div id="guestDetailContent" style="padding:4px 0 8px;"></div>
+        <div class="modal-footer">
+            <button class="btn-msave" onclick="closeGuestDetailModal()">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
-var allReservations = [];
-var activeFilter    = 'all';
-var currentDetailId = null;
-var apiBase     = '<%= request.getContextPath() %>/api/reservations';
-var roomApiBase = '<%= request.getContextPath() %>/api/rooms';
-var today       = new Date().toISOString().split('T')[0];
+var allReservations  = [];
+var activeFilter     = 'all';
+var currentDetailId  = null;
+var apiBase          = '<%= request.getContextPath() %>/api/reservations';
+var roomApiBase      = '<%= request.getContextPath() %>/api/rooms';
+var guestApiBase     = '<%= request.getContextPath() %>/api/guests';
+var today            = new Date().toISOString().split('T')[0];
 var allRooms         = [];
 var deleteRoomTarget = null;
+var allGuests        = [];
+var selectedGuest    = null;
 
 // ── Load ────────────────────────────────────────────────────────────────────
 function loadReservations() {
@@ -618,6 +709,12 @@ function openAddModal() {
     $('#addForm')[0].reset();
     $('#checkIn').val(today);
     $('#addAlertBox').hide();
+    selectedGuest = null;
+    window._guestSearchResults = [];
+    $('#resGuestSearch').val('');
+    $('#guestLookupResult').html('');
+    $('#selectedGuestBanner').hide();
+    $('#guestLookupSection').show();
     var $sel = $('#roomType');
     $sel.html('<option value="">Loading available rooms…</option>').prop('disabled', true);
     $.ajax({
@@ -645,17 +742,92 @@ function openAddModal() {
 }
 function closeAddModal() { $('#addModal').removeClass('show'); }
 
+function buildGuestResultCard(g) {
+    return '<div style="background:#eaf6f0;border:1.5px solid #27ae60;border-radius:7px;padding:10px 12px;margin-bottom:6px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+        '<div>' +
+        '<div style="font-weight:700;color:#196f3d;font-size:13.5px;">&#10003; ' + esc(g.fullName) + '</div>' +
+        '<div style="color:#5d8a6f;font-size:12px;margin-top:2px;">' + esc(g.mobileNumber) +
+        (g.email     ? ' &nbsp;|&nbsp; ' + esc(g.email)     : '') +
+        (g.nicNumber ? ' &nbsp;|&nbsp; NIC: ' + esc(g.nicNumber) : '') +
+        '</div></div>' +
+        '<button class="btn-msave" style="padding:5px 14px;font-size:12.5px;white-space:nowrap;" onclick="selectGuestForRes(' + g.id + ')">&#10003; Select</button>' +
+        '</div></div>';
+}
+
+function searchGuestForRes() {
+    var q = $.trim($('#resGuestSearch').val());
+    if (!q) {
+        $('#guestLookupResult').html('<span style="color:#c0392b;font-size:13px;">Please enter a name, mobile, email or NIC / passport number.</span>');
+        return;
+    }
+    $('#guestLookupResult').html('<span style="color:#8aacbc;font-size:13px;">Searching…</span>');
+    $.ajax({
+        url: guestApiBase + '?keyword=' + encodeURIComponent(q), type: 'GET', dataType: 'json',
+        success: function(res) {
+            if (res.success && res.guests && res.guests.length) {
+                window._guestSearchResults = res.guests;
+                if (res.guests.length === 1) {
+                    $('#guestLookupResult').html(buildGuestResultCard(res.guests[0]));
+                } else {
+                    var html = '<div style="font-size:12px;color:#5d7a8a;margin-bottom:6px;">' + res.guests.length + ' guests found &mdash; select one:</div>' +
+                               '<div style="max-height:210px;overflow-y:auto;">';
+                    res.guests.forEach(function(g) { html += buildGuestResultCard(g); });
+                    html += '</div>';
+                    $('#guestLookupResult').html(html);
+                }
+            } else {
+                window._guestSearchResults = [];
+                $('#guestLookupResult').html(
+                    '<div style="background:#fdf2f0;border:1.5px solid #e74c3c;border-radius:7px;padding:10px 12px;">' +
+                    '<div style="color:#c0392b;font-weight:600;font-size:13px;">&#10006; No registered guest found.</div>' +
+                    '<div style="color:#888;font-size:12px;margin-top:3px;">Please register the guest first before creating a reservation.</div>' +
+                    '</div>'
+                );
+            }
+        },
+        error: function() {
+            $('#guestLookupResult').html('<span style="color:#c0392b;font-size:13px;">Server error. Please try again.</span>');
+        }
+    });
+}
+
+function selectGuestForRes(id) {
+    var list = window._guestSearchResults || [];
+    var g = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) { g = list[i]; break; } }
+    if (!g) { for (var j = 0; j < allGuests.length; j++) { if (allGuests[j].id === id) { g = allGuests[j]; break; } } }
+    if (!g) return;
+    selectedGuest = g;
+    $('#guestLookupSection').hide();
+    $('#selectedGuestInfo').text('✓ ' + g.fullName);
+    $('#selectedGuestSubInfo').text(g.mobileNumber +
+        (g.email    ? '  |  ' + g.email    : '') +
+        (g.nicNumber ? '  |  NIC: ' + g.nicNumber : ''));
+    $('#selectedGuestBanner').show();
+    $('#addAlertBox').hide();
+}
+
+function clearGuestForRes() {
+    selectedGuest = null;
+    window._guestSearchResults = [];
+    $('#resGuestSearch').val('');
+    $('#guestLookupResult').html('');
+    $('#selectedGuestBanner').hide();
+    $('#guestLookupSection').show();
+}
+
 function saveReservation() {
-    var guestName     = $.trim($('#guestName').val());
-    var contactNumber = $.trim($('#contactNumber').val());
-    var roomType      = $('#roomType').val();
-    var address       = $.trim($('#address').val());
-    var checkIn       = $('#checkIn').val();
-    var checkOut      = $('#checkOut').val();
+    if (!selectedGuest) {
+        showModalAlert('addAlertBox', 'Please find and select a registered guest first.'); return;
+    }
+    var roomType = $('#roomType').val();
+    var checkIn  = $('#checkIn').val();
+    var checkOut = $('#checkOut').val();
 
     $('#addAlertBox').hide();
-    if (!guestName || !contactNumber || !roomType || !checkIn || !checkOut) {
-        showModalAlert('addAlertBox', 'Please fill in all required fields.'); return;
+    if (!roomType || !checkIn || !checkOut) {
+        showModalAlert('addAlertBox', 'Please select a room and set check-in / check-out dates.'); return;
     }
     if (checkOut <= checkIn) {
         showModalAlert('addAlertBox', 'Check-out must be after check-in.'); return;
@@ -666,8 +838,13 @@ function saveReservation() {
 
     $.ajax({
         url: apiBase, type: 'POST',
-        data: { action: 'add', guestName: guestName, contactNumber: contactNumber,
-                roomType: roomType, address: address, checkIn: checkIn, checkOut: checkOut },
+        data: { action: 'add',
+                guestName:     selectedGuest.fullName,
+                contactNumber: selectedGuest.mobileNumber,
+                roomType:      roomType,
+                address:       selectedGuest.address || '',
+                checkIn:       checkIn,
+                checkOut:      checkOut },
         dataType: 'json',
         success: function(res) {
             if (res.success) {
@@ -801,13 +978,115 @@ function showAlert(type, msg) {
 function showModalAlert(id, msg) {
     $('#' + id).removeClass('modal-alert-error').addClass('modal-alert modal-alert-error').html(msg).show();
 }
+// ── Guest functions ───────────────────────────────────────────────────────
+function loadGuests() {
+    $.ajax({
+        url: guestApiBase, type: 'GET', dataType: 'json',
+        success: function(res) {
+            if (res.success) { allGuests = res.guests; renderGuestTable(); $('#statGuests').text(allGuests.length); }
+        },
+        error: function() { $('#guestTableContainer').html('<div class="empty-state"><p>Failed to load guests.</p></div>'); }
+    });
+}
+
+function renderGuestTable() {
+    var kw = ($('#guestSearchInput').val() || '').toLowerCase();
+    var list = allGuests.filter(function(g) {
+        return !kw || g.fullName.toLowerCase().includes(kw) ||
+               g.mobileNumber.toLowerCase().includes(kw) ||
+               g.email.toLowerCase().includes(kw);
+    });
+    if (!list.length) {
+        $('#guestTableContainer').html('<div class="empty-state"><div class="es-icon">&#128101;</div><p>No guests found.</p></div>');
+        return;
+    }
+    var html = '<table><thead><tr><th>Name</th><th>Mobile</th><th>Email</th><th>NIC / ID</th><th>Address</th><th>Registered</th><th></th></tr></thead><tbody>';
+    list.forEach(function(g) {
+        html += '<tr>' +
+            '<td><strong>' + esc(g.fullName) + '</strong></td>' +
+            '<td>' + esc(g.mobileNumber) + '</td>' +
+            '<td>' + (g.email ? esc(g.email) : '<span style="color:#aaa">—</span>') + '</td>' +
+            '<td>' + (g.nicNumber ? esc(g.nicNumber) : '<span style="color:#aaa">—</span>') + '</td>' +
+            '<td>' + (g.address ? esc(g.address) : '<span style="color:#aaa">—</span>') + '</td>' +
+            '<td style="color:#8aacbc;font-size:12px;">' + esc((g.createdAt || '').substring(0,10)) + '</td>' +
+            '<td><button onclick="openGuestDetailModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a6985,#2389b0);color:#fff;border:none;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;">Details</button></td>' +
+            '</tr>';
+    });
+    html += '</tbody></table>';
+    $('#guestTableContainer').html(html);
+}
+
+function openRegisterGuestModal() {
+    $('#guestForm')[0].reset();
+    $('#guestAlertBox').hide();
+    $('#guestModal').addClass('show');
+}
+function closeRegisterGuestModal() { $('#guestModal').removeClass('show'); }
+
+function saveGuest() {
+    var fullName     = $.trim($('#gFullName').val());
+    var mobileNumber = $.trim($('#gMobile').val());
+    var email        = $.trim($('#gEmail').val());
+    var address      = $.trim($('#gAddress').val());
+    var nicNumber    = $.trim($('#gNic').val());
+    var notes        = $.trim($('#gNotes').val());
+
+    if (!fullName || !mobileNumber) {
+        $('#guestAlertBox').show().text('Full name and mobile number are required.');
+        return;
+    }
+    var $btn = $('#btnSaveGuest').prop('disabled', true).text('Saving…');
+    $.ajax({
+        url: guestApiBase, type: 'POST', dataType: 'json',
+        data: { action:'register', fullName:fullName, mobileNumber:mobileNumber,
+                email:email, address:address, nicNumber:nicNumber, notes:notes },
+        success: function(res) {
+            $btn.prop('disabled', false).text('Register Guest');
+            if (res.success) {
+                closeRegisterGuestModal();
+                showAlert('success', res.message);
+                loadGuests();
+            } else {
+                $('#guestAlertBox').show().text(res.message);
+            }
+        },
+        error: function() {
+            $btn.prop('disabled', false).text('Register Guest');
+            $('#guestAlertBox').show().text('Server error. Please try again.');
+        }
+    });
+}
+
+function openGuestDetailModal(id) {
+    var g = allGuests.find(function(x){ return x.id === id; });
+    if (!g) return;
+    var html = '<table style="width:100%;border-collapse:collapse;">' +
+        gdetailRow('Full Name',      g.fullName) +
+        gdetailRow('Mobile Number',  g.mobileNumber) +
+        gdetailRow('Email',          g.email      || '—') +
+        gdetailRow('NIC / Passport', g.nicNumber  || '—') +
+        gdetailRow('Address',        g.address    || '—') +
+        gdetailRow('Notes',          g.notes      || '—') +
+        gdetailRow('Registered On',  (g.createdAt || '').substring(0,10)) +
+        '</table>';
+    $('#guestDetailContent').html(html);
+    $('#guestDetailModal').addClass('show');
+}
+function closeGuestDetailModal() { $('#guestDetailModal').removeClass('show'); }
+function gdetailRow(label, value) {
+    return '<tr>' +
+        '<td style="padding:9px 8px;color:#6b8fa5;font-size:13px;font-weight:600;width:38%;border-bottom:1px solid #e8f0f5;">' + label + '</td>' +
+        '<td style="padding:9px 8px;color:#1a3c4e;font-size:13.5px;border-bottom:1px solid #e8f0f5;">' + esc(String(value)) + '</td>' +
+        '</tr>';
+}
+
 $('.modal-overlay').on('click', function(e) {
     if ($(e.target).hasClass('modal-overlay')) {
-        closeAddModal(); closeDetailModal(); closeBillModal();
+        closeAddModal(); closeDetailModal(); closeBillModal(); closeRegisterGuestModal(); closeGuestDetailModal();
     }
 });
 
-$(document).ready(function() { loadReservations(); loadRooms(); });
+$(document).ready(function() { loadReservations(); loadRooms(); loadGuests(); });
 </script>
 </body>
 </html>
