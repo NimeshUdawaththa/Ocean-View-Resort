@@ -16,13 +16,16 @@
     String  pageDesc  = isAdmin
             ? "Create a new Manager or Reception staff account."
             : "Create a new front-desk reception account.";
+    String  dashboardUrl = isAdmin
+            ? request.getContextPath() + "/views/dashboard.jsp"
+            : request.getContextPath() + "/views/manager-dashboard.jsp";
 %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= pageTitle %> | OceanView Resort</title>
+    <title> <%= pageTitle %> | OceanView Resort</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -293,7 +296,7 @@
                 <strong><%= userName != null ? userName : sessionRole %></strong>
                 <%= isAdmin ? "Admin" : "Manager" %>
             </div>
-            <a href="<%= request.getContextPath() %>/views/dashboard.jsp" class="btn-nav">&#8592; Dashboard</a>
+            <a href="<%= dashboardUrl %>" class="btn-nav">&#8592; Dashboard</a>
             <a href="<%= request.getContextPath() %>/api/logout" class="btn-nav">Logout</a>
         </div>
     </nav>
@@ -398,7 +401,7 @@
                 <hr class="divider">
 
                 <div class="btn-row">
-                    <a href="<%= request.getContextPath() %>/views/dashboard.jsp" class="btn-cancel">Cancel</a>
+                    <a href="<%= dashboardUrl %>" class="btn-cancel">Cancel</a>
                     <button type="submit" id="btnSubmit" class="btn-submit">Create Account</button>
                 </div>
             </form>

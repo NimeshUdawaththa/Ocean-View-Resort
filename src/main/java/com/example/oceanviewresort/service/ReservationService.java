@@ -150,7 +150,13 @@ public class ReservationService {
 
     // ── Cancel Reservation ────────────────────────────────────────────────────
     public boolean cancelReservation(int id) {
-        return reservationDAO.cancel(id);
+        Reservation r = reservationDAO.findById(id);
+        boolean ok    = reservationDAO.cancel(id);
+        // Free the assigned room back to available
+        if (ok && r != null && r.getRoomId() > 0) {
+            roomDAO.updateStatus(r.getRoomId(), Room.STATUS_AVAILABLE);
+        }
+        return ok;
     }
 
     // ── Bill calculation (returns BillDTO) ────────────────────────────────────
