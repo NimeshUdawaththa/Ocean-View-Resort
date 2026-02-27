@@ -501,6 +501,49 @@
     </div>
 </div>
 
+<!-- ── Edit Guest Modal ── -->
+<div class="modal-overlay" id="editGuestModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>&#9998; Edit Guest</h2>
+            <button class="btn-close" onclick="closeEditGuestModal()">&#10005;</button>
+        </div>
+        <div id="editGuestAlertBox" class="modal-alert" style="display:none;"></div>
+        <form id="editGuestForm" onsubmit="return false;">
+            <input type="hidden" id="editGuestId" />
+            <div class="form-row2">
+                <div class="fg"><label>Full Name <span class="req">*</span></label><input type="text" id="egFullName" /></div>
+                <div class="fg"><label>Mobile Number <span class="req">*</span></label><input type="tel" id="egMobile" /></div>
+            </div>
+            <div class="form-row2">
+                <div class="fg"><label>Email Address</label><input type="email" id="egEmail" /></div>
+                <div class="fg"><label>NIC / Passport No.</label><input type="text" id="egNic" /></div>
+            </div>
+            <div class="fg"><label>Address</label><input type="text" id="egAddress" /></div>
+            <div class="fg"><label>Notes</label><textarea id="egNotes" rows="3"></textarea></div>
+        </form>
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeEditGuestModal()">Cancel</button>
+            <button class="btn-msave" id="btnSaveEditGuest" onclick="saveEditGuest()">&#10003; Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Delete Guest Confirm Modal ── -->
+<div class="modal-overlay" id="deleteGuestModal">
+    <div class="modal" style="max-width:440px;">
+        <div class="modal-header">
+            <h2 style="color:#c0392b;">&#10006; Delete Guest</h2>
+            <button class="btn-close" onclick="closeDeleteGuestModal()">&#10005;</button>
+        </div>
+        <p style="color:#3a5a6e;font-size:14.5px;line-height:1.6;">Are you sure you want to delete <strong id="deleteGuestLabel"></strong>? This action cannot be undone.</p>
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeDeleteGuestModal()">Cancel</button>
+            <button class="btn-msave" id="btnConfirmDeleteGuest" style="background:linear-gradient(135deg,#c0392b,#e04b3a);" onclick="confirmDeleteGuest()">Delete Guest</button>
+        </div>
+    </div>
+</div>
+
 <script>
 var allReservations  = [];
 var activeFilter     = 'all';
@@ -1009,7 +1052,11 @@ function renderGuestTable() {
             '<td>' + (g.nicNumber ? esc(g.nicNumber) : '<span style="color:#aaa">—</span>') + '</td>' +
             '<td>' + (g.address ? esc(g.address) : '<span style="color:#aaa">—</span>') + '</td>' +
             '<td style="color:#8aacbc;font-size:12px;">' + esc((g.createdAt || '').substring(0,10)) + '</td>' +
-            '<td><button onclick="openGuestDetailModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a6985,#2389b0);color:#fff;border:none;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;">Details</button></td>' +
+            '<td style="white-space:nowrap;">' +
+            '<button onclick="openGuestDetailModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a6985,#2389b0);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;margin-right:3px;">Details</button>' +
+            '<button onclick="openEditGuestModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a7a4e,#27ae60);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;margin-right:3px;">&#9998; Edit</button>' +
+            '<button onclick="openDeleteGuestModal(' + g.id + ',\'' + esc(g.fullName) + '\')" style="background:linear-gradient(135deg,#c0392b,#e04b3a);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;">&#10006; Delete</button>' +
+            '</td>' +
             '</tr>';
     });
     html += '</tbody></table>';
@@ -1073,6 +1120,90 @@ function openGuestDetailModal(id) {
     $('#guestDetailModal').addClass('show');
 }
 function closeGuestDetailModal() { $('#guestDetailModal').removeClass('show'); }
+
+function openEditGuestModal(id) {
+    var g = allGuests.find(function(x){ return x.id === id; });
+    if (!g) return;
+    $('#editGuestForm')[0].reset();
+    $('#editGuestAlertBox').hide();
+    $('#editGuestId').val(g.id);
+    $('#egFullName').val(g.fullName);
+    $('#egMobile').val(g.mobileNumber);
+    $('#egEmail').val(g.email || '');
+    $('#egNic').val(g.nicNumber || '');
+    $('#egAddress').val(g.address || '');
+    $('#egNotes').val(g.notes || '');
+    $('#editGuestModal').addClass('show');
+}
+function closeEditGuestModal() { $('#editGuestModal').removeClass('show'); }
+
+function saveEditGuest() {
+    var id           = parseInt($('#editGuestId').val());
+    var fullName     = $.trim($('#egFullName').val());
+    var mobileNumber = $.trim($('#egMobile').val());
+    var email        = $.trim($('#egEmail').val());
+    var address      = $.trim($('#egAddress').val());
+    var nicNumber    = $.trim($('#egNic').val());
+    var notes        = $.trim($('#egNotes').val());
+
+    if (!fullName || !mobileNumber) {
+        $('#editGuestAlertBox').show().text('Full name and mobile number are required.');
+        return;
+    }
+    var $btn = $('#btnSaveEditGuest').prop('disabled', true).text('Saving…');
+    $.ajax({
+        url: guestApiBase, type: 'POST', dataType: 'json',
+        data: { action:'update', id:id, fullName:fullName, mobileNumber:mobileNumber,
+                email:email, address:address, nicNumber:nicNumber, notes:notes },
+        success: function(res) {
+            $btn.prop('disabled', false).text('\u2713 Save Changes');
+            if (res.success) {
+                closeEditGuestModal();
+                showAlert('success', '\u2713 ' + res.message);
+                loadGuests();
+            } else {
+                $('#editGuestAlertBox').show().text(res.message);
+            }
+        },
+        error: function() {
+            $btn.prop('disabled', false).text('\u2713 Save Changes');
+            $('#editGuestAlertBox').show().text('Server error. Please try again.');
+        }
+    });
+}
+
+var deleteGuestTargetId = null;
+function openDeleteGuestModal(id, name) {
+    deleteGuestTargetId = id;
+    $('#deleteGuestLabel').text(name);
+    $('#deleteGuestModal').addClass('show');
+}
+function closeDeleteGuestModal() { $('#deleteGuestModal').removeClass('show'); deleteGuestTargetId = null; }
+
+function confirmDeleteGuest() {
+    if (!deleteGuestTargetId) return;
+    var $btn = $('#btnConfirmDeleteGuest').prop('disabled', true).text('Deleting…');
+    $.ajax({
+        url: guestApiBase, type: 'POST', dataType: 'json',
+        data: { action:'delete', id: deleteGuestTargetId },
+        success: function(res) {
+            $btn.prop('disabled', false).text('Delete Guest');
+            if (res.success) {
+                closeDeleteGuestModal();
+                showAlert('success', '\u2713 ' + res.message);
+                loadGuests();
+            } else {
+                closeDeleteGuestModal();
+                showAlert('error', res.message);
+            }
+        },
+        error: function() {
+            $btn.prop('disabled', false).text('Delete Guest');
+            closeDeleteGuestModal();
+            showAlert('error', 'Failed to delete guest.');
+        }
+    });
+}
 function gdetailRow(label, value) {
     return '<tr>' +
         '<td style="padding:9px 8px;color:#6b8fa5;font-size:13px;font-weight:600;width:38%;border-bottom:1px solid #e8f0f5;">' + label + '</td>' +
@@ -1082,7 +1213,9 @@ function gdetailRow(label, value) {
 
 $('.modal-overlay').on('click', function(e) {
     if ($(e.target).hasClass('modal-overlay')) {
-        closeAddModal(); closeDetailModal(); closeBillModal(); closeRegisterGuestModal(); closeGuestDetailModal();
+        closeAddModal(); closeDetailModal(); closeBillModal();
+        closeRegisterGuestModal(); closeGuestDetailModal();
+        closeEditGuestModal(); closeDeleteGuestModal();
     }
 });
 

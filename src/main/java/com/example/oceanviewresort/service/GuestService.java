@@ -70,7 +70,33 @@ public class GuestService {
     public List<GuestDTO> searchGuests(String keyword) {
         return guestDAO.search(keyword).stream().map(this::toDTO).collect(Collectors.toList());
     }
+    // ── Update guest ───────────────────────────────────────────────────────
+    /** @return null on success, or user-facing error message. */
+    public String updateGuest(int id, String fullName, String mobileNumber, String email,
+                              String address, String nicNumber, String notes) {
+        if (fullName     == null || fullName.isBlank())     return "Full name is required.";
+        if (mobileNumber == null || mobileNumber.isBlank()) return "Mobile number is required.";
 
+        String result = guestDAO.update(
+            id,
+            fullName.trim(),
+            mobileNumber.trim(),
+            email     != null ? email.trim()     : null,
+            address   != null ? address.trim()   : "",
+            nicNumber != null ? nicNumber.trim() : "",
+            notes     != null ? notes.trim()     : ""
+        );
+
+        if (result == null)                    return null;
+        if ("duplicate_mobile".equals(result)) return "A guest with mobile number \"" + mobileNumber.trim() + "\" is already registered.";
+        if ("duplicate_email".equals(result))  return "A guest with email \"" + email.trim() + "\" is already registered.";
+        return "Database error: " + result.replace("error:", "");
+    }
+
+    // ── Delete guest ────────────────────────────────────────────────────────
+    public boolean deleteGuest(int id) {
+        return guestDAO.delete(id);
+    }
     // ── Mapper ────────────────────────────────────────────────────────────────
     private GuestDTO toDTO(Guest g) {
         return new GuestDTO(

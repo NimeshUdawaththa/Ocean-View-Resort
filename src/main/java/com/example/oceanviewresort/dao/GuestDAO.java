@@ -125,7 +125,48 @@ public class GuestDAO {
         return list;
     }
 
-    // ── Row mapper ────────────────────────────────────────────────────────────
+    // ── Update ─────────────────────────────────────────────────────────────
+    /** @return null on success, "duplicate_mobile", "duplicate_email", or "error:…" */
+    public String update(int id, String fullName, String mobileNumber, String email,
+                         String address, String nicNumber, String notes) {
+        String sql = "UPDATE guests SET full_name=?, mobile_number=?, email=?, " +
+                     "address=?, nic_number=?, notes=? WHERE id=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, fullName);
+            ps.setString(2, mobileNumber);
+            ps.setString(3, email != null && !email.isBlank() ? email : null);
+            ps.setString(4, address);
+            ps.setString(5, nicNumber);
+            ps.setString(6, notes);
+            ps.setInt(7, id);
+            ps.executeUpdate();
+            return null;
+        } catch (SQLIntegrityConstraintViolationException e) {
+            String msg = e.getMessage().toLowerCase();
+            if (msg.contains("mobile_number")) return "duplicate_mobile";
+            if (msg.contains("email"))         return "duplicate_email";
+            return "duplicate_mobile";
+        } catch (SQLException e) {
+            System.err.println("[GuestDAO] update error: " + e.getMessage());
+            return "error:" + e.getMessage();
+        }
+    }
+
+    // ── Delete ─────────────────────────────────────────────────────────────
+    public boolean delete(int id) {
+        String sql = "DELETE FROM guests WHERE id = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[GuestDAO] delete error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ── Row mapper ───────────────────────────────────────────────────────────
     private Guest mapRow(ResultSet rs) throws SQLException {
         return new Guest(
             rs.getInt("id"),
