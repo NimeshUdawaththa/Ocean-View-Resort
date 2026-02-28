@@ -239,6 +239,7 @@
     <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('res',this)">&#128203; Reservations</button>
         <button class="tab-btn"        onclick="switchTab('guests',this)">&#128100; Guests</button>
+        <button class="tab-btn"        onclick="switchTab('rooms',this)">&#127968; Rooms</button>
     </div>
 
     <!-- RESERVATIONS TAB -->
@@ -281,6 +282,29 @@
             </div>
             <div id="guestTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading guests&#8230;</p></div>
+            </div>
+        </div>
+    </div>
+    <!-- ROOMS TAB -->
+    <div class="tab-pane" id="tab-rooms">
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="setRoomFilter('all',this)">All</button>
+            <button class="filter-btn" onclick="setRoomFilter('available',this)">Available</button>
+            <button class="filter-btn" onclick="setRoomFilter('occupied',this)">Occupied</button>
+            <button class="filter-btn" onclick="setRoomFilter('maintenance',this)">Maintenance</button>
+        </div>
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div class="toolbar-title">&#127968; All Rooms</div>
+                <div class="toolbar-actions">
+                    <div class="search-box">
+                        <span class="search-icon">&#128269;</span>
+                        <input type="text" id="roomSearch" placeholder="Search room number, type&#8230;" oninput="renderRoomsTable()" />
+                    </div>
+                </div>
+            </div>
+            <div id="roomTableContainer">
+                <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading rooms&#8230;</p></div>
             </div>
         </div>
     </div>
@@ -477,6 +501,8 @@
 /* === GLOBALS === */
 var allReservations = [];
 var allGuests       = [];
+var allRooms        = [];
+var roomFilter      = 'all';
 var cancelResTarget = null;
 var guestForNewRes  = null;
 var currentDetailId = null;
@@ -495,6 +521,7 @@ function switchTab(name, btn) {
     $('#tab-' + name).addClass('active');
     $(btn).addClass('active');
     if (name === 'guests' && allGuests.length === 0) loadGuests();
+    if (name === 'rooms'  && allRooms.length  === 0) loadRooms();
 }
 
 /* === STATS === */
@@ -505,6 +532,59 @@ function updateStats() {
     var co     = allReservations.filter(function(r){ return r.checkOutDate === today; }).length;
     $('#statTotal').text(tot); $('#statActive').text(active);
     $('#statToday').text(ci);  $('#statOut').text(co);
+}
+
+/* === ROOMS (read-only) === */
+function loadRooms() {
+    $.ajax({ url: apiRooms, type:'GET', dataType:'json',
+        success: function(res) {
+            if (res.success) { allRooms = res.rooms || []; renderRoomsTable(); }
+            else showAlert('error', res.message);
+        },
+        error: function(){ showAlert('error','Failed to load rooms.'); }
+    });
+}
+
+function setRoomFilter(f, btn) {
+    roomFilter = f;
+    $('.filter-bar .filter-btn', $('#tab-rooms')).removeClass('active');
+    $(btn).addClass('active');
+    renderRoomsTable();
+}
+
+function renderRoomsTable() {
+    var q = ($('#roomSearch').val()||'').toLowerCase();
+    var list = allRooms.filter(function(r){
+        if (roomFilter !== 'all' && r.status !== roomFilter) return false;
+        return !q || (r.roomNumber||'').toLowerCase().includes(q) ||
+               (r.roomType||'').toLowerCase().includes(q) ||
+               (r.description||'').toLowerCase().includes(q);
+    });
+
+    if (!list.length) {
+        $('#roomTableContainer').html('<div class="empty-state"><div class="es-icon">&#127968;</div><p>No rooms found.</p></div>');
+        return;
+    }
+
+    var rows = list.map(function(r, i) {
+        var badge = r.status === 'available'   ? 'badge-active' :
+                    r.status === 'occupied'    ? 'badge-cancelled' : 'badge-checkedout';
+        return '<tr>' +
+            '<td>'+(i+1)+'</td>' +
+            '<td><strong>'+esc(r.roomNumber)+'</strong></td>' +
+            '<td>'+esc(r.roomType)+'</td>' +
+            '<td>'+esc(r.floor)+'</td>' +
+            '<td>'+esc(r.description||'\u2014')+'</td>' +
+            '<td><strong>$'+esc(r.ratePerNight)+'</strong></td>' +
+            '<td><span class="badge '+badge+'">'+esc(r.status)+'</span></td>' +
+            '</tr>';
+    }).join('');
+
+    $('#roomTableContainer').html(
+        '<table><thead><tr><th>#</th><th>Room No.</th><th>Type</th><th>Floor</th>' +
+        '<th>Description</th><th>Rate/Night</th><th>Status</th></tr></thead>' +
+        '<tbody>'+rows+'</tbody></table>'
+    );
 }
 
 /* === RESERVATIONS === */
