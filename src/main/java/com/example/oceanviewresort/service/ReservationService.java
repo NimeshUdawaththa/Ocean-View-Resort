@@ -103,6 +103,12 @@ public class ReservationService {
             .collect(Collectors.toList());
     }
 
+    // ── Sync guest info across all their reservations ─────────────────────────
+    public void syncGuestInfo(String oldContactNumber, String newGuestName,
+                               String newContactNumber, String newAddress) {
+        reservationDAO.syncGuestInfo(oldContactNumber, newGuestName, newContactNumber, newAddress);
+    }
+
     // ── Update Reservation ────────────────────────────────────────────────────
     /**
      * Updates dates, address and room type (recalculates total) for an active reservation.
