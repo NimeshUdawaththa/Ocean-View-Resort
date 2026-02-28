@@ -239,6 +239,7 @@
     <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('res',this)">&#128203; Reservations</button>
         <button class="tab-btn"        onclick="switchTab('guests',this)">&#128100; Guests</button>
+        <button class="tab-btn"        onclick="switchTab('rooms',this)">&#127968; Rooms</button>
     </div>
 
     <!-- RESERVATIONS TAB -->
@@ -284,6 +285,29 @@
             </div>
         </div>
     </div>
+    <!-- ROOMS TAB -->
+    <div class="tab-pane" id="tab-rooms">
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="setRoomFilter('all',this)">All</button>
+            <button class="filter-btn" onclick="setRoomFilter('available',this)">Available</button>
+            <button class="filter-btn" onclick="setRoomFilter('occupied',this)">Occupied</button>
+            <button class="filter-btn" onclick="setRoomFilter('maintenance',this)">Maintenance</button>
+        </div>
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div class="toolbar-title">&#127968; All Rooms</div>
+                <div class="toolbar-actions">
+                    <div class="search-box">
+                        <span class="search-icon">&#128269;</span>
+                        <input type="text" id="roomSearch" placeholder="Search room number, type&#8230;" oninput="renderRoomsTable()" />
+                    </div>
+                </div>
+            </div>
+            <div id="roomTableContainer">
+                <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading rooms&#8230;</p></div>
+            </div>
+        </div>
+    </div>
 </main>
 
 
@@ -295,28 +319,29 @@
         <button class="btn-close" onclick="closeAddResModal()">&#10005;</button>
     </div>
     <div id="addResAlert" class="modal-alert"></div>
-
-    <div class="section-sep">Guest Lookup &mdash; auto-fill by mobile (optional)</div>
-    <div class="lookup-strip">
-        <input type="text" id="lookupMobile" placeholder="Enter registered guest mobile to auto-fill&#8230;" />
-        <button class="btn-lookup" onclick="lookupGuest()">&#128269; Find</button>
+    <div id="arGuestLookupSection" style="background:#f0f7fb;border:1.5px solid #b8d4e8;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-weight:700;color:#1a3c4e;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">&#128101; Step 1 &mdash; Find Registered Guest <span class="req">*</span></div>
+        <div style="display:flex;gap:8px;">
+            <input type="text" id="arResGuestSearch" placeholder="Name, mobile, email or NIC&hellip;" style="flex:1;padding:10px 13px;border:2px solid #dce8ee;border-radius:9px;font-size:14px;color:#1e3a4a;background:#f6fafc;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')searchGuestForRes();" />
+            <button class="btn-msave" style="white-space:nowrap;padding:0 16px;" onclick="searchGuestForRes()">&#128269; Find</button>
+        </div>
+        <div id="arGuestLookupResult" style="margin-top:8px;"></div>
     </div>
-    <div id="lookupFoundMsg" class="lookup-found"></div>
-
-    <div class="section-sep">Guest Information</div>
-    <div class="form-row2">
-        <div class="fg"><label>Guest Name <span class="req">*</span></label><input type="text" id="arGuestName" placeholder="Full name" /></div>
-        <div class="fg"><label>Contact Number <span class="req">*</span></label><input type="text" id="arContact" placeholder="+94 71 234 5678" /></div>
+    <div id="arSelectedGuestBanner" style="display:none;background:#eaf6f0;border:1.5px solid #27ae60;border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div>
+                <div style="font-weight:700;color:#196f3d;font-size:14px;" id="arSelectedGuestInfo"></div>
+                <div style="color:#5d8a6f;font-size:12px;margin-top:2px;" id="arSelectedGuestSubInfo"></div>
+            </div>
+            <button onclick="clearGuestForRes()" style="background:none;border:1px solid #c0392b;color:#c0392b;cursor:pointer;font-size:12px;font-weight:600;padding:4px 10px;border-radius:5px;">Change Guest</button>
+        </div>
     </div>
-    <div class="fg"><label>Address</label><textarea id="arAddress" placeholder="Guest address (optional)"></textarea></div>
-
     <div class="section-sep">Reservation Details</div>
     <div class="form-row3">
         <div class="fg"><label>Room <span class="req">*</span></label><select id="arRoom"><option value="">Loading&#8230;</option></select></div>
         <div class="fg"><label>Check-in <span class="req">*</span></label><input type="date" id="arCheckIn" /></div>
         <div class="fg"><label>Check-out <span class="req">*</span></label><input type="date" id="arCheckOut" /></div>
     </div>
-
     <div class="modal-footer">
         <button class="btn-mcancel" onclick="closeAddResModal()">Cancel</button>
         <button class="btn-msave"   id="btnSaveRes" onclick="saveNewReservation()">&#128203; Create Reservation</button>
@@ -477,7 +502,10 @@
 /* === GLOBALS === */
 var allReservations = [];
 var allGuests       = [];
+var allRooms        = [];
+var roomFilter      = 'all';
 var cancelResTarget = null;
+var selectedGuest   = null;
 var guestForNewRes  = null;
 var currentDetailId = null;
 var currentGuestId  = null;
@@ -495,6 +523,7 @@ function switchTab(name, btn) {
     $('#tab-' + name).addClass('active');
     $(btn).addClass('active');
     if (name === 'guests' && allGuests.length === 0) loadGuests();
+    if (name === 'rooms'  && allRooms.length  === 0) loadRooms();
 }
 
 /* === STATS === */
@@ -505,6 +534,59 @@ function updateStats() {
     var co     = allReservations.filter(function(r){ return r.checkOutDate === today; }).length;
     $('#statTotal').text(tot); $('#statActive').text(active);
     $('#statToday').text(ci);  $('#statOut').text(co);
+}
+
+/* === ROOMS (read-only) === */
+function loadRooms() {
+    $.ajax({ url: apiRooms, type:'GET', dataType:'json',
+        success: function(res) {
+            if (res.success) { allRooms = res.rooms || []; renderRoomsTable(); }
+            else showAlert('error', res.message);
+        },
+        error: function(){ showAlert('error','Failed to load rooms.'); }
+    });
+}
+
+function setRoomFilter(f, btn) {
+    roomFilter = f;
+    $('.filter-bar .filter-btn', $('#tab-rooms')).removeClass('active');
+    $(btn).addClass('active');
+    renderRoomsTable();
+}
+
+function renderRoomsTable() {
+    var q = ($('#roomSearch').val()||'').toLowerCase();
+    var list = allRooms.filter(function(r){
+        if (roomFilter !== 'all' && r.status !== roomFilter) return false;
+        return !q || (r.roomNumber||'').toLowerCase().includes(q) ||
+               (r.roomType||'').toLowerCase().includes(q) ||
+               (r.description||'').toLowerCase().includes(q);
+    });
+
+    if (!list.length) {
+        $('#roomTableContainer').html('<div class="empty-state"><div class="es-icon">&#127968;</div><p>No rooms found.</p></div>');
+        return;
+    }
+
+    var rows = list.map(function(r, i) {
+        var badge = r.status === 'available'   ? 'badge-active' :
+                    r.status === 'occupied'    ? 'badge-cancelled' : 'badge-checkedout';
+        return '<tr>' +
+            '<td>'+(i+1)+'</td>' +
+            '<td><strong>'+esc(r.roomNumber)+'</strong></td>' +
+            '<td>'+esc(r.roomType)+'</td>' +
+            '<td>'+esc(r.floor)+'</td>' +
+            '<td>'+esc(r.description||'\u2014')+'</td>' +
+            '<td><strong>$'+esc(r.ratePerNight)+'</strong></td>' +
+            '<td><span class="badge '+badge+'">'+esc(r.status)+'</span></td>' +
+            '</tr>';
+    }).join('');
+
+    $('#roomTableContainer').html(
+        '<table><thead><tr><th>#</th><th>Room No.</th><th>Type</th><th>Floor</th>' +
+        '<th>Description</th><th>Rate/Night</th><th>Status</th></tr></thead>' +
+        '<tbody>'+rows+'</tbody></table>'
+    );
 }
 
 /* === RESERVATIONS === */
@@ -571,43 +653,74 @@ function renderResTable() {
 }
 
 /* === NEW RESERVATION MODAL === */
-function openAddResModal(prefill) {
+function openAddResModal(g) {
+    selectedGuest = null; window._arGuestSearchResults = [];
     $('#addResAlert').hide();
-    $('#lookupFoundMsg').hide().css({background:'',color:'',borderColor:''});
-    $('#lookupMobile').val('');
-    $('#arGuestName').val(prefill && prefill.fullName  ? prefill.fullName  : '');
-    $('#arContact').val(  prefill && prefill.mobile    ? prefill.mobile    : '');
-    $('#arAddress').val(  prefill && prefill.address   ? prefill.address   : '');
-    $('#arCheckIn').val(today);
-    $('#arCheckOut').val('');
+    $('#arResGuestSearch').val(''); $('#arGuestLookupResult').html('');
+    $('#arSelectedGuestBanner').hide(); $('#arGuestLookupSection').show();
+    $('#arCheckIn').val(today); $('#arCheckOut').val('');
     loadAvailableRooms('#arRoom', null);
+    if (g && g.id) setTimeout(function(){ selectGuestForRes(g.id); }, 80);
     $('#addResModal').addClass('show');
 }
-function closeAddResModal() { $('#addResModal').removeClass('show'); }
+function closeAddResModal() { $('#addResModal').removeClass('show'); selectedGuest = null; }
 
-function lookupGuest() {
-    var mobile = $.trim($('#lookupMobile').val());
-    if (!mobile) return;
-    $.ajax({ url: apiGuests + '?mobile=' + encodeURIComponent(mobile), type:'GET', dataType:'json',
+function buildGuestResultCard(g) {
+    return '<div style="background:#eaf6f0;border:1.5px solid #27ae60;border-radius:7px;padding:10px 12px;margin-bottom:6px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div>' +
+        '<div style="font-weight:700;color:#196f3d;font-size:13.5px;">&#10003; ' + esc(g.fullName) + '</div>' +
+        '<div style="color:#5d8a6f;font-size:12px;margin-top:2px;">' + esc(g.mobileNumber) +
+        (g.email ? ' &nbsp;|&nbsp; ' + esc(g.email) : '') +
+        (g.nicNumber ? ' &nbsp;|&nbsp; NIC: ' + esc(g.nicNumber) : '') + '</div></div>' +
+        '<button class="btn-msave" style="padding:5px 14px;font-size:12.5px;white-space:nowrap;" onclick="selectGuestForRes(' + g.id + ')">&#10003; Select</button>' +
+        '</div></div>';
+}
+
+function searchGuestForRes() {
+    var q = $.trim($('#arResGuestSearch').val());
+    if (!q) { $('#arGuestLookupResult').html('<span style="color:#c0392b;font-size:13px;">Please enter a name, mobile, email or NIC.</span>'); return; }
+    $('#arGuestLookupResult').html('<span style="color:#8aacbc;font-size:13px;">Searching…</span>');
+    $.ajax({ url: apiGuests + '?keyword=' + encodeURIComponent(q), type:'GET', dataType:'json',
         success: function(res) {
-            if (res.success && res.guest) {
-                var g = res.guest;
-                $('#arGuestName').val(g.fullName || '');
-                $('#arContact').val(  g.mobileNumber || '');
-                $('#arAddress').val(  g.address || '');
-                $('#lookupFoundMsg')
-                    .css({background:'#e8f8f0',color:'#1b6b33',borderColor:'#b8e8ce'})
-                    .html('&#10003; Found: <strong>'+esc(g.fullName)+'</strong>' +
-                          (g.nicNumber ? ' &nbsp;|&nbsp; NIC: '+esc(g.nicNumber) : '')).show();
+            if (res.success && res.guests && res.guests.length) {
+                window._arGuestSearchResults = res.guests;
+                if (res.guests.length === 1) {
+                    $('#arGuestLookupResult').html(buildGuestResultCard(res.guests[0]));
+                } else {
+                    var html = '<div style="font-size:12px;color:#5d7a8a;margin-bottom:6px;">' + res.guests.length + ' guests found:</div><div style="max-height:210px;overflow-y:auto;">';
+                    res.guests.forEach(function(g){ html += buildGuestResultCard(g); });
+                    html += '</div>';
+                    $('#arGuestLookupResult').html(html);
+                }
             } else {
-                $('#lookupFoundMsg')
-                    .css({background:'#fde8e8',color:'#c0392b',borderColor:'#f5c6c6'})
-                    .html('&#10007; No registered guest found with that mobile.').show();
-                setTimeout(function(){ $('#lookupFoundMsg').fadeOut(300); }, 3000);
+                window._arGuestSearchResults = [];
+                $('#arGuestLookupResult').html(
+                    '<div style="background:#fdf2f0;border:1.5px solid #e74c3c;border-radius:7px;padding:10px 12px;">' +
+                    '<div style="color:#c0392b;font-weight:600;font-size:13px;">&#10006; No registered guest found.</div>' +
+                    '<div style="color:#888;font-size:12px;margin-top:3px;">Register the guest first before creating a reservation.</div></div>'
+                );
             }
         },
-        error: function(){ showModalAlert('addResAlert','Lookup failed. Try again.'); }
+        error: function(){ $('#arGuestLookupResult').html('<span style="color:#c0392b;font-size:13px;">Server error. Please try again.</span>'); }
     });
+}
+
+function selectGuestForRes(id) {
+    var list = window._arGuestSearchResults || [], g = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) { g = list[i]; break; } }
+    if (!g) { for (var j = 0; j < allGuests.length; j++) { if (allGuests[j].id === id) { g = allGuests[j]; break; } } }
+    if (!g) return;
+    selectedGuest = g;
+    $('#arGuestLookupSection').hide();
+    $('#arSelectedGuestInfo').text('\u2713 ' + g.fullName);
+    $('#arSelectedGuestSubInfo').text(g.mobileNumber + (g.email ? '  |  ' + g.email : '') + (g.nicNumber ? '  |  NIC: ' + g.nicNumber : ''));
+    $('#arSelectedGuestBanner').show(); $('#addResAlert').hide();
+}
+
+function clearGuestForRes() {
+    selectedGuest = null; window._arGuestSearchResults = [];
+    $('#arResGuestSearch').val(''); $('#arGuestLookupResult').html('');
+    $('#arSelectedGuestBanner').hide(); $('#arGuestLookupSection').show();
 }
 
 function loadAvailableRooms(selector, currentRoomId) {
@@ -633,25 +746,19 @@ function loadAvailableRooms(selector, currentRoomId) {
 }
 
 function saveNewReservation() {
-    var guestName = $.trim($('#arGuestName').val());
-    var contact   = $.trim($('#arContact').val());
-    var address   = $.trim($('#arAddress').val());
-    var roomId    = $('#arRoom').val();
-    var roomType  = $('#arRoom option:selected').data('roomtype');
-    var checkIn   = $('#arCheckIn').val();
-    var checkOut  = $('#arCheckOut').val();
-
-    if (!guestName || !contact || !roomId || !checkIn || !checkOut) {
-        showModalAlert('addResAlert','Please fill in all required fields.'); return;
-    }
-    if (checkOut <= checkIn) {
-        showModalAlert('addResAlert','Check-out date must be after check-in date.'); return;
-    }
+    if (!selectedGuest) { showModalAlert('addResAlert','Please find and select a registered guest first.'); return; }
+    var roomId   = $('#arRoom').val();
+    var roomType = $('#arRoom option:selected').data('roomtype');
+    var checkIn  = $('#arCheckIn').val();
+    var checkOut = $('#arCheckOut').val();
+    if (!roomId || !checkIn || !checkOut) { showModalAlert('addResAlert','Please select a room and set check-in / check-out dates.'); return; }
+    if (checkOut <= checkIn) { showModalAlert('addResAlert','Check-out date must be after check-in date.'); return; }
 
     var $btn = $('#btnSaveRes').prop('disabled',true).text('Creating\u2026');
     $.ajax({ url:apiRes, type:'POST', dataType:'json',
-        data:{ action:'add', guestName:guestName, contactNumber:contact, address:address,
-               roomType:roomType, roomId:roomId, checkIn:checkIn, checkOut:checkOut },
+        data:{ action:'add', guestName:selectedGuest.fullName, contactNumber:selectedGuest.mobileNumber,
+               address:selectedGuest.address || '', roomType:roomType, roomId:roomId,
+               checkIn:checkIn, checkOut:checkOut },
         success: function(res) {
             if (res.success) {
                 closeAddResModal();
@@ -1007,13 +1114,17 @@ function saveEditGuest() {
 }
 
 function newResFromGuest() {
+    var id = currentGuestId;
     closeGuestDetailModal();
-    setTimeout(function(){ openAddResModal(guestForNewRes); }, 200);
+    setTimeout(function(){
+        openAddResModal(null);
+        if (id) setTimeout(function(){ selectGuestForRes(id); }, 100);
+    }, 200);
 }
 
 function newResForGuest(id) {
-    var g = allGuests.find(function(x){ return x.id === id; });
-    openAddResModal(g ? { fullName:g.fullName, mobile:g.mobileNumber, address:g.address } : null);
+    openAddResModal(null);
+    setTimeout(function(){ selectGuestForRes(id); }, 100);
 }
 
 /* === HELPERS === */
