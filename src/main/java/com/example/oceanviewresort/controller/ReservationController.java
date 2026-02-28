@@ -29,8 +29,8 @@ import java.util.List;
 @WebServlet(name = "reservationController", value = "/api/reservations")
 public class ReservationController extends HttpServlet {
 
-    private final ReservationService svc     = new ReservationService();
-    private final RoomDAO              roomDAO = new RoomDAO();
+    private final ReservationService svc = new ReservationService();
+    private final RoomDAO  roomDAO = new RoomDAO();
 
     // ── GET ──────────────────────────────────────────────────────────────────
     @Override
@@ -42,10 +42,10 @@ public class ReservationController extends HttpServlet {
         HttpSession session = req.getSession(false);
         if (!authenticated(session)) { unauthorized(resp, out); return; }
 
-        String role   = (String) session.getAttribute("role");
-        int    userId = ((User) session.getAttribute("loggedInUser")).getId();
+        String role = (String) session.getAttribute("role");
+        int userId = ((User) session.getAttribute("loggedInUser")).getId();
 
-        String action  = nullToEmpty(req.getParameter("action"));
+        String action = nullToEmpty(req.getParameter("action"));
         String idParam = nullToEmpty(req.getParameter("id"));
 
         // ── bill ─────────────────────────────────────────────
@@ -105,13 +105,13 @@ public class ReservationController extends HttpServlet {
 
         // ── add ───────────────────────────────────────────────────────────────
         if ("add".equals(action)) {
-            String guestName     = nullToEmpty(req.getParameter("guestName")).trim();
-            String address       = nullToEmpty(req.getParameter("address")).trim();
+            String guestName = nullToEmpty(req.getParameter("guestName")).trim();
+            String address  = nullToEmpty(req.getParameter("address")).trim();
             String contactNumber = nullToEmpty(req.getParameter("contactNumber")).trim();
-            String roomType      = nullToEmpty(req.getParameter("roomType")).trim();
-            String checkIn       = nullToEmpty(req.getParameter("checkIn")).trim();
-            String checkOut      = nullToEmpty(req.getParameter("checkOut")).trim();
-            String roomIdParam   = nullToEmpty(req.getParameter("roomId")).trim();
+            String roomType  = nullToEmpty(req.getParameter("roomType")).trim();
+            String checkIn  = nullToEmpty(req.getParameter("checkIn")).trim();
+            String checkOut = nullToEmpty(req.getParameter("checkOut")).trim();
+            String roomIdParam = nullToEmpty(req.getParameter("roomId")).trim();
 
             if (guestName.isEmpty() || contactNumber.isEmpty() ||
                 roomType.isEmpty() || checkIn.isEmpty() || checkOut.isEmpty()) {

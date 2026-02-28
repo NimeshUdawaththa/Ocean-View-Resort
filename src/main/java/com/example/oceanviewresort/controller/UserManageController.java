@@ -40,7 +40,7 @@ public class UserManageController extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
-        if (!isAdmin(request, response, out)) return;
+        if (!isAdminOrManager(request, response, out)) return;
 
         List<UserDTO> users = userService.getManagedUsers();
 
@@ -71,9 +71,11 @@ public class UserManageController extends HttpServlet {
         PrintWriter out  = response.getWriter();
         JsonObject  json = new JsonObject();
 
-        if (!isAdmin(request, response, out)) return;
+        if (!isAdminOrManager(request, response, out)) return;
 
         String action = nullToEmpty(request.getParameter("action"));
+        // Managers may only update / delete reception accounts
+        String callerRole = (String) request.getSession(false).getAttribute("role");
 
         switch (action) {
 
@@ -97,6 +99,14 @@ public class UserManageController extends HttpServlet {
                     badRequest(response, out, json, "Invalid role.");
                     return;
                 }
+                // Managers may only manage reception accounts
+                if (User.ROLE_MANAGER.equals(callerRole) && !User.ROLE_RECEPTION.equals(role)) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    json.addProperty("success", false);
+                    json.addProperty("message", "Managers can only edit reception accounts.");
+                    out.print(json);
+                    return;
+                }
 
                 String res = userService.updateUser(id, username, password, email, fullName, role);
                 handleResult(response, out, json, res,
@@ -111,6 +121,18 @@ public class UserManageController extends HttpServlet {
                 if (id <= 0) {
                     badRequest(response, out, json, "Valid user ID is required.");
                     return;
+                }
+                // Managers may only delete reception accounts
+                if (User.ROLE_MANAGER.equals(callerRole)) {
+                    UserDTO target = userService.getManagedUsers().stream()
+                            .filter(u -> u.getId() == id).findFirst().orElse(null);
+                    if (target == null || !User.ROLE_RECEPTION.equals(target.getRole())) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        json.addProperty("success", false);
+                        json.addProperty("message", "Managers can only delete reception accounts.");
+                        out.print(json);
+                        return;
+                    }
                 }
                 String res = userService.deleteUser(id);
                 if ("protected".equals(res)) {
@@ -133,6 +155,31 @@ public class UserManageController extends HttpServlet {
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+    private boolean isAdminOrManager(HttpServletRequest request,
+                                     HttpServletResponse response,
+                                     PrintWriter out) throws IOException {
+        HttpSession session = request.getSession(false);
+        JsonObject json = new JsonObject();
+
+        if (session == null || session.getAttribute("loggedInUser") == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            json.addProperty("success", false);
+            json.addProperty("message", "Not authenticated.");
+            out.print(json);
+            return false;
+        }
+
+        String role = (String) session.getAttribute("role");
+        if (!User.ROLE_ADMIN.equals(role) && !User.ROLE_MANAGER.equals(role)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            json.addProperty("success", false);
+            json.addProperty("message", "Access denied.");
+            out.print(json);
+            return false;
+        }
+        return true;
+    }
+
     private boolean isAdmin(HttpServletRequest request,
                              HttpServletResponse response,
                              PrintWriter out) throws IOException {

@@ -22,7 +22,7 @@
         body { font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; background:#f0f6fa; min-height:100vh; color:#1e3a4a; }
 
         /* Navbar */
-        nav { background:linear-gradient(135deg,#0a4f6e,#1aa3c8); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,50,80,.25); }
+        nav { background:linear-gradient(135deg,#0a4f6e,#1aa3c8); padding:0 32px; height:64px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,50,80,.25); position:sticky; top:0; z-index:900; }
         .nav-brand { display:flex; align-items:center; gap:10px; color:white; font-size:20px; font-weight:700; }
         .nav-brand span { font-size:26px; }
         .nav-right { display:flex; align-items:center; gap:12px; }
@@ -33,11 +33,11 @@
         .btn-nav-primary { background:rgba(255,255,255,.9); color:#0a4f6e; border:none; padding:9px 20px; border-radius:8px; font-size:13.5px; font-weight:700; cursor:pointer; text-decoration:none; transition:all .2s; }
         .btn-nav-primary:hover { background:white; }
 
-        main { max-width:1100px; margin:36px auto; padding:0 24px; }
+        main { max-width:1200px; margin:36px auto; padding:0 24px; }
 
         /* Welcome */
         .welcome { margin-bottom:28px; }
-        .welcome h1 { font-size:22px; font-weight:700; color:#0a4f6e; }
+        .welcome h1 { font-size:26px; font-weight:800; color:#0a4f6e; }
         .welcome p  { color:#7a95a8; font-size:14px; margin-top:4px; }
 
         /* Stats */
@@ -49,7 +49,7 @@
 
         /* Quick Actions */
         .section-title { font-size:14px; font-weight:700; color:#7a95a8; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px; }
-        .action-cards { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:30px; }
+        .action-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:30px; }
         .action-card { display:flex; align-items:center; gap:14px; background:white; border-radius:13px; padding:16px 20px; text-decoration:none; color:#1e3a4a; box-shadow:0 3px 12px rgba(0,50,80,.08); border:2px solid transparent; cursor:pointer; transition:all .2s; min-width:200px; }
         .action-card:hover { border-color:#1aa3c8; transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,80,120,.13); }
         .ac-icon { width:44px; height:44px; border-radius:11px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); display:flex; align-items:center; justify-content:center; font-size:20px; color:white; flex-shrink:0; }
@@ -100,9 +100,24 @@
         .badge-available   { background:#e8f8ee; color:#1b6b33; }
         .badge-occupied    { background:#fde8e8; color:#c0392b; }
         .badge-maintenance { background:#fff3e0; color:#b7690a; }
-        .rooms-section { margin-top:30px; }
+        .badge-manager     { background:#e6f7fd; color:#0a4f6e; }
+        .badge-reception   { background:#e8f8ee; color:#1b6b33; }
         .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
-        .section-header .section-title { margin-bottom:0; }
+
+        /* Tabs */
+        .tab-nav  { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid #e8f0f4; }
+        .tab-btn  { padding:10px 22px; border:none; background:none; font-size:14px; font-weight:600; color:#7a95a8; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; border-radius:8px 8px 0 0; }
+        .tab-btn.active { color:#0a4f6e; border-bottom-color:#1aa3c8; background:#f0f9fd; }
+        .tab-btn:hover:not(.active) { background:#f6fafc; color:#3a5a6e; }
+        .tab-pane { display:none; }
+        .tab-pane.active { display:block; }
+
+        /* Staff table */
+        .avatar { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); display:flex; align-items:center; justify-content:center; font-size:15px; color:white; font-weight:700; flex-shrink:0; }
+        .avatar.reception { background:linear-gradient(135deg,#1e8449,#34a853); }
+        .user-cell { display:flex; align-items:center; gap:10px; }
+        .user-info .name  { font-size:14px; font-weight:700; color:#1e3a4a; }
+        .user-info .uname { font-size:12px; color:#8aacbc; margin-top:1px; }
 
         .empty-state { text-align:center; padding:60px 20px; color:#9ab4c2; }
         .empty-state .es-icon { font-size:48px; margin-bottom:12px; }
@@ -200,6 +215,10 @@
             <div class="stat-icon" style="background:#fef9e7;">&#128101;</div>
             <div class="stat-info"><div class="val" id="statGuests">–</div><div class="lbl">Registered Guests</div></div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#eee8ff;">&#128100;</div>
+            <div class="stat-info"><div class="val" id="statStaff">–</div><div class="lbl">Staff Members</div></div>
+        </div>
     </div>
 
     <!-- Quick Actions -->
@@ -223,32 +242,62 @@
         </div>
     </div>
 
-    <!-- Rooms Section -->
-    <div class="rooms-section">
-        <div class="section-header">
-            <div class="section-title">&#127968; Rooms</div>
-            <button class="btn-add-res" onclick="openAddRoomModal()">&#43; Add Room</button>
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" id="tab-btn-reservations" onclick="showTab('reservations')">&#128203; Reservations</button>
+        <button class="tab-btn" id="tab-btn-rooms" onclick="showTab('rooms')">&#127968; Rooms</button>
+        <button class="tab-btn" id="tab-btn-guests" onclick="showTab('guests')">&#128101; Guests</button>
+        <button class="tab-btn" id="tab-btn-staff" onclick="showTab('staff')">&#128100; Staff</button>
+    </div>
+
+    <!-- RESERVATIONS TAB -->
+    <div id="tab-reservations" class="tab-pane active">
+        <div class="filter-bar">
+            <button class="filter-btn active" id="filterAll"      onclick="applyFilter('all')">All</button>
+            <button class="filter-btn"         id="filterActive"  onclick="applyFilter('active')">Active</button>
+            <button class="filter-btn"         id="filterToday"   onclick="applyFilter('today')">Today's Check-ins</button>
         </div>
+
+        <div id="alertBox" class="alert"></div>
+
         <div class="table-card">
+            <div class="table-toolbar">
+                <div class="toolbar-title">&#128203; All Reservations</div>
+                <div class="search-box">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="searchInput" placeholder="Search guest, room or res #…" oninput="renderTable()" />
+                </div>
+                <button class="btn-add-res" onclick="openAddModal()">&#43; New Reservation</button>
+            </div>
+            <div id="tableContainer">
+                <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading reservations…</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROOMS TAB -->
+    <div id="tab-rooms" class="tab-pane">
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div class="toolbar-title">&#127968; Room Directory</div>
+                <button class="btn-add-res" onclick="openAddRoomModal()">&#43; Add Room</button>
+            </div>
             <div id="roomTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading rooms…</p></div>
             </div>
         </div>
     </div>
 
-    <!-- Guests Section -->
-    <div style="margin-top:30px;">
-        <div class="section-header">
-            <div class="section-title">&#128101; Registered Guests</div>
-            <button class="btn-add-res" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
-        </div>
-        <div class="table-card" style="margin-bottom:24px;">
+    <!-- GUESTS TAB -->
+    <div id="tab-guests" class="tab-pane">
+        <div class="table-card">
             <div class="table-toolbar">
-                <div class="toolbar-title">Guest Directory</div>
+                <div class="toolbar-title">&#128101; Guest Directory</div>
                 <div class="search-box">
                     <span class="search-icon">&#128269;</span>
                     <input type="text" id="guestSearchInput" placeholder="Name, mobile or email…" oninput="renderGuestTable()" />
                 </div>
+                <button class="btn-add-res" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
             </div>
             <div id="guestTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading guests…</p></div>
@@ -256,28 +305,20 @@
         </div>
     </div>
 
-    <!-- Filter tabs -->
-
-    <div class="filter-bar">
-        <button class="filter-btn active" id="filterAll"      onclick="applyFilter('all')">All</button>
-        <button class="filter-btn"         id="filterActive"  onclick="applyFilter('active')">Active</button>
-        <button class="filter-btn"         id="filterToday"   onclick="applyFilter('today')">Today's Check-ins</button>
-    </div>
-
-    <div id="alertBox" class="alert"></div>
-
-    <!-- Reservations table -->
-    <div class="table-card">
-        <div class="table-toolbar">
-            <div class="toolbar-title">&#128203; All Reservations</div>
-            <div class="search-box">
-                <span class="search-icon">&#128269;</span>
-                <input type="text" id="searchInput" placeholder="Search guest, room or res #…" oninput="renderTable()" />
+    <!-- STAFF TAB -->
+    <div id="tab-staff" class="tab-pane">
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div class="toolbar-title">&#128100; Reception Staff</div>
+                <div class="search-box">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="staffSearchInput" placeholder="Search by name or username&hellip;" oninput="renderStaffTable()" />
+                </div>
+                <a href="<%= request.getContextPath() %>/views/add-user.jsp" class="btn-add-res" style="text-decoration:none;">&#43; Register Reception</a>
             </div>
-            <button class="btn-add-res" onclick="openAddModal()">&#43; New Reservation</button>
-        </div>
-        <div id="tableContainer">
-            <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading reservations…</p></div>
+            <div id="staffTableContainer">
+                <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading staff&hellip;</p></div>
+            </div>
         </div>
     </div>
 </main>
@@ -529,6 +570,47 @@
     </div>
 </div>
 
+<!-- ── Edit Staff Modal ── -->
+<div class="modal-overlay" id="editStaffModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>&#9998; Edit Staff Account</h2>
+            <button class="btn-close" onclick="closeEditStaffModal()">&#10005;</button>
+        </div>
+        <div id="editStaffAlertBox" class="modal-alert"></div>
+        <input type="hidden" id="editStaffId" />
+        <div class="form-row2">
+            <div class="fg"><label>Full Name <span class="req">*</span></label><input type="text" id="editStaffFullName" placeholder="Full name" /></div>
+            <div class="fg"><label>Email</label><input type="email" id="editStaffEmail" placeholder="Email address" /></div>
+        </div>
+        <div class="fg"><label>Username <span class="req">*</span></label><input type="text" id="editStaffUsername" placeholder="Username" autocomplete="off" /></div>
+        <div class="fg">
+            <label>New Password</label>
+            <input type="password" id="editStaffPassword" placeholder="Leave blank to keep current" autocomplete="new-password" />
+        </div>
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeEditStaffModal()">Cancel</button>
+            <button class="btn-msave" id="btnSaveStaffEdit" onclick="saveStaffEdit()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Delete Staff Confirm ── -->
+<div class="modal-overlay" id="deleteStaffModal">
+    <div class="modal" style="max-width:420px;">
+        <div class="modal-header">
+            <h2 style="color:#c0392b;">&#128465; Delete Account</h2>
+            <button class="btn-close" onclick="closeDeleteStaffModal()">&#10005;</button>
+        </div>
+        <p style="color:#3a5a6e;font-size:14.5px;line-height:1.6;">Permanently delete <strong id="deleteStaffTargetName"></strong>? This cannot be undone.</p>
+        <input type="hidden" id="deleteStaffTargetId" />
+        <div class="modal-footer">
+            <button class="btn-mcancel" onclick="closeDeleteStaffModal()">Cancel</button>
+            <button class="btn-msave" id="btnConfirmDelStaff" style="background:linear-gradient(135deg,#c0392b,#e04b3a);" onclick="confirmDeleteStaff()">Yes, Delete</button>
+        </div>
+    </div>
+</div>
+
 <!-- ── Delete Guest Confirm Modal ── -->
 <div class="modal-overlay" id="deleteGuestModal">
     <div class="modal" style="max-width:440px;">
@@ -609,6 +691,8 @@ var allRooms         = [];
 var deleteRoomTarget = null;
 var allGuests        = [];
 var selectedGuest    = null;
+var staffApiBase     = '<%= request.getContextPath() %>/api/users';
+var allStaff         = [];
 
 // ── Load ────────────────────────────────────────────────────────────────────
 function loadReservations() {
@@ -748,6 +832,14 @@ function confirmDeleteRoom() {
         },
         error: function() { showAlert('error', 'Failed to delete.'); $btn.prop('disabled', false).text('Delete'); }
     });
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function showTab(name) {
+    $('.tab-btn').removeClass('active');
+    $('.tab-pane').removeClass('active');
+    $('#tab-btn-' + name).addClass('active');
+    $('#tab-' + name).addClass('active');
 }
 
 // ── Filter ──────────────────────────────────────────────────────────────────
@@ -1095,6 +1187,98 @@ function loadGuests() {
             if (res.success) { allGuests = res.guests; renderGuestTable(); $('#statGuests').text(allGuests.length); }
         },
         error: function() { $('#guestTableContainer').html('<div class="empty-state"><p>Failed to load guests.</p></div>'); }
+    });
+}
+
+function getInitials(name) {
+    if (!name) return '?';
+    var parts = name.trim().split(/\s+/);
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length-1][0] : '')).toUpperCase();
+}
+
+function loadStaff() {
+    $.ajax({
+        url: staffApiBase, type: 'GET', dataType: 'json',
+        success: function(res) {
+            if (res.success && res.users) {
+                allStaff = res.users.filter(function(u){ return u.role === 'reception'; });
+                $('#statStaff').text(allStaff.length);
+                renderStaffTable();
+            }
+        },
+        error: function() { $('#staffTableContainer').html('<div class="empty-state"><p>Failed to load staff.</p></div>'); }
+    });
+}
+
+function renderStaffTable() {
+    var kw = ($('#staffSearchInput').val() || '').toLowerCase();
+    var list = allStaff.filter(function(u) {
+        return !kw || u.fullName.toLowerCase().includes(kw) || u.username.toLowerCase().includes(kw) || (u.email && u.email.toLowerCase().includes(kw));
+    });
+    if (!list.length) {
+        $('#staffTableContainer').html('<div class="empty-state"><div class="es-icon">&#128100;</div><p>No reception staff found.</p></div>');
+        return;
+    }
+    var rows = list.map(function(u, i) {
+        var initials = getInitials(u.fullName);
+        return '<tr>' +
+            '<td>' + (i+1) + '</td>' +
+            '<td><div class="user-cell"><div class="avatar reception">' + esc(initials) + '</div>' +
+                 '<div class="user-info"><div class="name">' + esc(u.fullName) + '</div><div class="uname">@' + esc(u.username) + '</div></div></div></td>' +
+            '<td>' + (u.email ? esc(u.email) : '<span style="color:#b0c8d4">—</span>') + '</td>' +
+            '<td><span class="badge badge-reception">Reception</span></td>' +
+            '<td><button class="btn-edit" onclick="openEditStaffModal(' + u.id + ')">Edit</button>' +
+                 '<button class="btn-delete" onclick="openDeleteStaffModal(' + u.id + ',\'' + esc(u.fullName) + '\')">Delete</button></td>' +
+            '</tr>';
+    }).join('');
+    $('#staffTableContainer').html(
+        '<table><thead><tr><th>#</th><th>Staff Member</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    );
+}
+
+function openEditStaffModal(id) {
+    var u = allStaff.find(function(x){ return x.id === id; });
+    if (!u) return;
+    $('#editStaffId').val(u.id); $('#editStaffFullName').val(u.fullName); $('#editStaffEmail').val(u.email || '');
+    $('#editStaffUsername').val(u.username); $('#editStaffPassword').val('');
+    $('#editStaffAlertBox').hide(); $('#editStaffModal').addClass('show');
+}
+function closeEditStaffModal() { $('#editStaffModal').removeClass('show'); $('#editStaffAlertBox').hide(); }
+
+function saveStaffEdit() {
+    var id = $('#editStaffId').val(), fullName = $.trim($('#editStaffFullName').val()), username = $.trim($('#editStaffUsername').val());
+    var email = $.trim($('#editStaffEmail').val()), password = $.trim($('#editStaffPassword').val());
+    $('#editStaffAlertBox').hide();
+    if (!fullName || !username) { showModalAlert('editStaffAlertBox', 'Full name and username are required.'); return; }
+    if (password && password.length < 6) { showModalAlert('editStaffAlertBox', 'Password must be at least 6 characters.'); return; }
+    var $btn = $('#btnSaveStaffEdit').prop('disabled', true).text('Saving…');
+    $.ajax({
+        url: staffApiBase, type: 'POST', dataType: 'json',
+        data: { action:'update', id:id, fullName:fullName, email:email, username:username, role:'reception', password:password },
+        success: function(res) {
+            if (res.success) { closeEditStaffModal(); showAlert('success', '\u2713 ' + res.message); loadStaff(); }
+            else showModalAlert('editStaffAlertBox', res.message);
+            $btn.prop('disabled', false).text('Save Changes');
+        },
+        error: function() { showModalAlert('editStaffAlertBox', 'Failed to update.'); $btn.prop('disabled', false).text('Save Changes'); }
+    });
+}
+
+function openDeleteStaffModal(id, name) { $('#deleteStaffTargetId').val(id); $('#deleteStaffTargetName').text(name); $('#deleteStaffModal').addClass('show'); }
+function closeDeleteStaffModal() { $('#deleteStaffModal').removeClass('show'); }
+
+function confirmDeleteStaff() {
+    var id = $('#deleteStaffTargetId').val();
+    var $btn = $('#btnConfirmDelStaff').prop('disabled', true).text('Deleting…');
+    $.ajax({
+        url: staffApiBase, type: 'POST', dataType: 'json',
+        data: { action:'delete', id:id },
+        success: function(res) {
+            closeDeleteStaffModal();
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadStaff(); } else showAlert('error', res.message);
+            $btn.prop('disabled', false).text('Yes, Delete');
+        },
+        error: function() { showAlert('error', 'Failed to delete.'); $btn.prop('disabled', false).text('Yes, Delete'); closeDeleteStaffModal(); }
     });
 }
 
@@ -1456,11 +1640,12 @@ $('.modal-overlay').on('click', function(e) {
         closeRegisterGuestModal(); closeGuestDetailModal();
         closeEditGuestModal(); closeDeleteGuestModal();
         closeEditResModal(); closeCancelResModal();
+        closeEditStaffModal(); closeDeleteStaffModal();
     }
 });
 
 $(document).ready(function() {
-    loadReservations(); loadRooms(); loadGuests();
+    loadReservations(); loadRooms(); loadGuests(); loadStaff();
     // Poll every 60 s so scheduler-driven status changes (checked_out, available) appear automatically
     setInterval(function() { loadReservations(); loadRooms(); }, 60000);
 });
