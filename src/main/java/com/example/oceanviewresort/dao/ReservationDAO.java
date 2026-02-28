@@ -65,6 +65,23 @@ public class ReservationDAO {
         }
     }
 
+    // ── Sync guest info across all their reservations ─────────────────────────
+    public void syncGuestInfo(String oldContactNumber, String newGuestName,
+                               String newContactNumber, String newAddress) {
+        String sql = "UPDATE reservations SET guest_name=?, contact_number=?, address=? "
+                   + "WHERE contact_number=?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newGuestName);
+            ps.setString(2, newContactNumber);
+            ps.setString(3, newAddress != null ? newAddress : "");
+            ps.setString(4, oldContactNumber);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] syncGuestInfo error: " + e.getMessage());
+        }
+    }
+
     // ── Cancel ────────────────────────────────────────────────────────────────
     public boolean cancel(int id) {
         String sql = "UPDATE reservations SET status='cancelled' WHERE id=?";

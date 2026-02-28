@@ -81,12 +81,7 @@ public class ReservationController extends HttpServlet {
         // ── list ─────────────────────────────────────────────
         // Expire any past-checkout reservations before returning data
         svc.expireCheckedOut();
-        List<ReservationDTO> list;
-        if (User.ROLE_ADMIN.equals(role) || User.ROLE_MANAGER.equals(role)) {
-            list = svc.getAllReservations();
-        } else {
-            list = svc.getReservationsByUser(userId);
-        }
+        List<ReservationDTO> list = svc.getAllReservations();
 
         JsonArray arr = new JsonArray();
         for (ReservationDTO r : list) arr.add(buildResJson(r));
@@ -107,8 +102,6 @@ public class ReservationController extends HttpServlet {
         if (!authenticated(session)) { unauthorized(resp, out); return; }
 
         String action = nullToEmpty(req.getParameter("action"));
-        String role   = (String) session.getAttribute("role");
-        boolean isManagerOrAdmin = User.ROLE_MANAGER.equals(role) || User.ROLE_ADMIN.equals(role);
 
         // ── add ───────────────────────────────────────────────────────────────
         if ("add".equals(action)) {
@@ -160,8 +153,6 @@ public class ReservationController extends HttpServlet {
 
         // ── update ────────────────────────────────────────────────────────────
         if ("update".equals(action)) {
-            if (!isManagerOrAdmin) { unauthorized(resp, out); return; }
-
             int    id         = parseId(nullToEmpty(req.getParameter("id")));
             String checkIn    = nullToEmpty(req.getParameter("checkIn")).trim();
             String checkOut   = nullToEmpty(req.getParameter("checkOut")).trim();
@@ -201,8 +192,6 @@ public class ReservationController extends HttpServlet {
 
         // ── cancel ────────────────────────────────────────────────────────────
         if ("cancel".equals(action)) {
-            if (!isManagerOrAdmin) { unauthorized(resp, out); return; }
-
             int id = parseId(nullToEmpty(req.getParameter("id")));
             if (id <= 0) { badRequest(resp, out, "Valid reservation id required."); return; }
 

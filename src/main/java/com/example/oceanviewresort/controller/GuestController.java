@@ -42,7 +42,6 @@ public class GuestController extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         if (!authenticated(session)) { unauthorized(resp, out); return; }
-        if (!isManagerOrAdmin(session)) { forbidden(resp, out); return; }
 
         String idParam      = req.getParameter("id");
         String mobileParam  = req.getParameter("mobile");
@@ -117,8 +116,7 @@ public class GuestController extends HttpServlet {
         PrintWriter out = resp.getWriter();
 
         HttpSession session = req.getSession(false);
-        if (!authenticated(session))    { unauthorized(resp, out); return; }
-        if (!isManagerOrAdmin(session)) { forbidden(resp, out);    return; }
+        if (!authenticated(session)) { unauthorized(resp, out); return; }
 
         String action = nullToEmpty(req.getParameter("action"));
         JsonObject j  = new JsonObject();
@@ -159,10 +157,16 @@ public class GuestController extends HttpServlet {
 
             if (id <= 0) { badRequest(resp, out, "Invalid guest id."); return; }
 
+            // Capture old mobile before update so we can sync reservations
+            GuestDTO existing = svc.findById(id);
+            String oldMobile  = existing != null ? existing.getMobileNumber() : mobileNumber;
+
             String error = svc.updateGuest(id, fullName, mobileNumber,
                 email.isEmpty() ? null : email, address, nicNumber, notes);
 
             if (error == null) {
+                // Propagate name, contact and address changes to all reservations
+                resSvc.syncGuestInfo(oldMobile, fullName, mobileNumber, address);
                 j.addProperty("success", true);
                 j.addProperty("message", "Guest updated successfully.");
                 GuestDTO g = svc.findById(id);
@@ -174,6 +178,7 @@ public class GuestController extends HttpServlet {
             }
 
         } else if ("delete".equals(action)) {
+            if (!isManagerOrAdmin(session)) { forbidden(resp, out); return; }
             int id = parseInt(nullToEmpty(req.getParameter("id")), -1);
             if (id <= 0) { badRequest(resp, out, "Invalid guest id."); return; }
             boolean deleted = svc.deleteGuest(id);
