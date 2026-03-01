@@ -32,6 +32,21 @@
         .nav-user strong { display:block; font-size:15px; color:white; }
         .btn-nav { background:rgba(255,255,255,.15); color:white; border:1px solid rgba(255,255,255,.3); padding:8px 18px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:600; text-decoration:none; transition:background .2s; }
         .btn-nav:hover { background:rgba(255,255,255,.28); }
+        .btn-help { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.18); color:white; border:2px solid rgba(255,255,255,.45); font-size:17px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+        .btn-help:hover { background:rgba(255,255,255,.35); border-color:white; }
+        .help-overlay { display:none; position:fixed; inset:0; background:rgba(10,40,60,.55); z-index:1100; align-items:center; justify-content:center; }
+        .help-overlay.show { display:flex; }
+        .help-modal { background:white; border-radius:18px; max-width:680px; width:92%; max-height:88vh; overflow-y:auto; box-shadow:0 12px 48px rgba(0,50,80,.25); }
+        .help-header { background:linear-gradient(135deg,#0a4f6e,#1aa3c8); padding:22px 28px; border-radius:18px 18px 0 0; display:flex; align-items:center; justify-content:space-between; }
+        .help-header h2 { color:white; font-size:18px; font-weight:800; }
+        .help-header .btn-hclose { background:rgba(255,255,255,.18); border:1.5px solid rgba(255,255,255,.4); color:white; width:32px; height:32px; border-radius:8px; cursor:pointer; font-size:16px; }
+        .help-body { padding:22px 28px; }
+        .help-section { margin-bottom:20px; }
+        .help-section h3 { font-size:13px; font-weight:800; color:#0a4f6e; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; padding-bottom:6px; border-bottom:2px solid #e6f7fd; }
+        .help-row { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; font-size:13.5px; color:#2a4a5e; }
+        .help-icon { font-size:15px; flex-shrink:0; width:20px; text-align:center; margin-top:2px; }
+        .hbadge { display:inline-block; padding:2px 9px; border-radius:12px; font-size:11.5px; font-weight:700; vertical-align:middle; }
+        .hb-active { background:#e8f8ee; color:#1b6b33; } .hb-ci { background:#fff8e1; color:#e65100; } .hb-co { background:#e6f7fd; color:#0a4f6e; } .hb-can { background:#fde8e8; color:#c0392b; }
         .btn-nav-primary { background:white; color:#0a4f6e; border:none; padding:9px 20px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:700; transition:all .2s; }
         .btn-nav-primary:hover { background:#e6f7fd; }
 
@@ -188,6 +203,7 @@
             Administrator
         </div>
         <button class="btn-nav-primary" onclick="openAddModal()">&#43; New Reservation</button>
+        <button class="btn-help" onclick="openHelp()" title="Help">?</button>
         <a href="<%= request.getContextPath() %>/api/logout" class="btn-nav">Logout</a>
     </div>
 </nav>
@@ -1056,6 +1072,9 @@ function openCancelResModal(id) {
     $('#cancelResModal').addClass('show');
 }
 function closeCancelResModal() { $('#cancelResModal').removeClass('show'); cancelResTarget = null; }
+function openHelp()  { $('#helpModal').addClass('show'); }
+function closeHelp() { $('#helpModal').removeClass('show'); }
+$('#helpModal').on('click', function(e){ if($(e.target).is('#helpModal')) closeHelp(); });
 function doCheckIn(id) {
     $.ajax({ url: apiBase, type: 'POST', dataType: 'json', data: { action: 'checkin', id: id },
         success: function(res) {
@@ -1431,6 +1450,63 @@ $(document).ready(function() {
     setInterval(function() { loadReservations(); loadRooms(); }, 60000);
 });
 </script>
+
+<!-- HELP MODAL -->
+<div class="help-overlay" id="helpModal">
+  <div class="help-modal">
+    <div class="help-header">
+      <h2>&#10067; Help &amp; Guide &mdash; Admin</h2>
+      <button class="btn-hclose" onclick="closeHelp()">&#10005;</button>
+    </div>
+    <div class="help-body">
+      <div class="help-section">
+        <h3>&#128197; Reservations</h3>
+        <div class="help-row"><span class="help-icon">&#43;</span><span><strong>New Reservation</strong> &mdash; Click &ldquo;+ New Reservation&rdquo; in the navbar to create a booking.</span></div>
+        <div class="help-row"><span class="help-icon">&#10003;</span><span><strong>Check In</strong> &mdash; Shown when status is <span class="hbadge hb-active">active</span>. Marks the guest as arrived.</span></div>
+        <div class="help-row"><span class="help-icon">&#10004;</span><span><strong>Check Out</strong> &mdash; Shown when status is <span class="hbadge hb-ci">checked_in</span>. Completes the stay and frees the room.</span></div>
+        <div class="help-row"><span class="help-icon">&#9998;</span><span><strong>Edit</strong> &mdash; Modify dates or room for active reservations only.</span></div>
+        <div class="help-row"><span class="help-icon">&#10006;</span><span><strong>Cancel</strong> &mdash; Permanently cancel a reservation. Cannot be undone.</span></div>
+        <div class="help-row"><span class="help-icon">&#129534;</span><span><strong>Bill</strong> &mdash; View and print the guest&rsquo;s bill at any time.</span></div>
+      </div>
+      <div class="help-section">
+        <h3>&#128269; Filters &amp; Search</h3>
+        <div class="help-row"><span class="help-icon">&#9632;</span><span>Use the filter tabs (All / Active / Today&rsquo;s Check-ins / Checked In / Checked Out / Cancelled) to narrow the list.</span></div>
+        <div class="help-row"><span class="help-icon">&#128269;</span><span>Search by guest name, reservation number, or room type.</span></div>
+      </div>
+      <div class="help-section">
+        <h3>&#128994; Status Legend</h3>
+        <div class="help-row"><span class="help-icon">&#9679;</span><span><span class="hbadge hb-active">active</span> &mdash; Confirmed booking, not yet checked in.</span></div>
+        <div class="help-row"><span class="help-icon">&#9679;</span><span><span class="hbadge hb-ci">checked_in</span> &mdash; Guest is currently in the room.</span></div>
+        <div class="help-row"><span class="help-icon">&#9679;</span><span><span class="hbadge hb-co">checked_out</span> &mdash; Stay completed.</span></div>
+        <div class="help-row"><span class="help-icon">&#9679;</span><span><span class="hbadge hb-can">cancelled</span> &mdash; Reservation was cancelled.</span></div>
+      </div>
+      <div class="help-section">
+        <h3>&#127968; Rooms</h3>
+        <div class="help-row"><span class="help-icon">&#43;</span><span><strong>Add Room</strong> &mdash; Add new rooms with type, floor, and rate per night.</span></div>
+        <div class="help-row"><span class="help-icon">&#9998;</span><span><strong>Edit Room</strong> &mdash; Update room details including number, type, and rate.</span></div>
+        <div class="help-row"><span class="help-icon">&#128465;</span><span><strong>Delete Room</strong> &mdash; Remove a room permanently (only when not occupied).</span></div>
+      </div>
+      <div class="help-section">
+        <h3>&#128101; Staff Management</h3>
+        <div class="help-row"><span class="help-icon">&#43;</span><span><strong>Add Staff</strong> &mdash; Create Manager or Reception accounts from the Staff tab.</span></div>
+        <div class="help-row"><span class="help-icon">&#9998;</span><span><strong>Edit Staff</strong> &mdash; Update name, username, role, or password.</span></div>
+        <div class="help-row"><span class="help-icon">&#128683;</span><span><strong>Deactivate</strong> &mdash; Disable a staff account without deleting it.</span></div>
+      </div>
+      <div class="help-section">
+        <h3>&#127987; Button Reference</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;background:#f6fafc;border:1px solid #e0eef5;border-radius:8px;padding:7px 12px;"><button class="btn-view" style="pointer-events:none;">Details</button><span style="font-size:13px;color:#3a5a6e;">View full info</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:#f6fafc;border:1px solid #e0eef5;border-radius:8px;padding:7px 12px;"><button class="btn-bill" style="pointer-events:none;">&#129534; Bill</button><span style="font-size:13px;color:#3a5a6e;">View &amp; print bill</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:#f6fafc;border:1px solid #e0eef5;border-radius:8px;padding:7px 12px;"><button class="btn-checkin" style="pointer-events:none;">&#10003; Check In</button><span style="font-size:13px;color:#3a5a6e;">Mark as arrived</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:#f6fafc;border:1px solid #e0eef5;border-radius:8px;padding:7px 12px;"><button class="btn-checkout" style="pointer-events:none;">&#10004; Check Out</button><span style="font-size:13px;color:#3a5a6e;">Complete stay</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:#f6fafc;border:1px solid #e0eef5;border-radius:8px;padding:7px 12px;"><button class="btn-edit" style="pointer-events:none;">&#9998; Edit</button><span style="font-size:13px;color:#3a5a6e;">Edit reservation</span></div>
+          <div style="display:flex;align-items:center;gap:8px;background:#f6fafc;border:1px solid #e0eef5;border-radius:8px;padding:7px 12px;"><button class="btn-delete" style="pointer-events:none;">&#10006; Cancel</button><span style="font-size:13px;color:#3a5a6e;">Cancel reservation</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
 

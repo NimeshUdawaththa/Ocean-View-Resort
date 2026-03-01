@@ -16,8 +16,10 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 40px 16px;
             background: linear-gradient(135deg, #0a4f6e 0%, #0d7a9a 40%, #1aa3c8 70%, #3bbfdf 100%);
             position: relative;
             overflow: hidden;
@@ -74,12 +76,10 @@
 
         /* Logo / Brand area */
         .brand-wrapper {
-            position: absolute;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
             text-align: center;
             color: white;
+            margin-bottom: 20px;
+            z-index: 10;
         }
 
         .brand-wrapper .brand-icon {
@@ -281,6 +281,7 @@
         /* Register link */
         .register-row {
             text-align: center;
+            margin-top: 20px;
             font-size: 14px;
             color: #7a95a8;
         }
@@ -330,14 +331,12 @@
         /* Responsive */
         @media (max-width: 480px) {
             .login-card {
-                margin: 16px;
-                padding: 36px 26px 32px;
+                margin: 0;
+                padding: 32px 22px 28px;
             }
-
-            .brand-wrapper {
-                top: 16px;
+            body {
+                padding: 24px 12px;
             }
-
         }
     </style>
     <!-- jQuery -->
@@ -355,7 +354,7 @@
     <!-- Top brand  -->
     <div class="brand-wrapper">
         <div class="brand-icon">&#9875;</div>
-        <div class="brand-name">OceanView Resort</div>
+        <div class="brand-name">Ocean View Resort</div>
     </div>
 
     <!-- Login Card -->
@@ -429,24 +428,18 @@
                 </div>
             </div>
 
-            <!-- Remember me + Forgot password -->
+            <!-- Remember me -->
             <div class="options-row">
                 <label class="remember-me">
                     <input type="checkbox" name="remember" />
                     Remember me
                 </label>
-                <a href="#" class="forgot-link">Forgot password?</a>
             </div>
 
             <!-- Submit -->
             <button type="submit" id="btnLogin" class="btn-login">Sign In</button>
 
         </form>
-
-        <!-- Register -->
-        <div class="register-row">
-            Don't have an account? <a href="#">Create one</a>
-        </div>
 
     </div>
 
