@@ -102,8 +102,6 @@
         .btn-edit:hover   { background:#f59f00; color:white; }
         .btn-delete { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fde8e8; color:#c0392b; transition:all .2s; }
         .btn-delete:hover { background:#e04b3a; color:white; }
-        .btn-cancel-res { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fde8e8; color:#c0392b; transition:all .2s; margin-right:4px; }
-        .btn-cancel-res:hover { background:#e74c3c; color:white; }
 
         /* Filter bar */
         .filter-bar { display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
@@ -192,7 +190,7 @@
 <main>
     <div class="welcome">
         <h1>Admin Dashboard &#128737;&#65039;</h1>
-        <p>Full system management &mdash; reservations, rooms, guests and staff.</p>
+        
     </div>
 
     <!-- Stats -->
@@ -785,8 +783,7 @@ function renderTable() {
             '<td onclick="event.stopPropagation()">' +
               '<button class="btn-view" onclick="openDetailModal(' + r.id + ')">Details</button>' +
               '<button class="btn-bill" onclick="openBillModal(' + r.id + ')">Bill</button>' +
-              (r.status === 'active' ? '<button class="btn-edit" onclick="openEditResModal(' + r.id + ')">&#9998; Edit</button>' +
-              '<button class="btn-cancel-res" onclick="openCancelResModal(' + r.id + ')">&#128683; Cancel</button>' : '') +
+              (r.status === 'active' ? '<button class="btn-edit" onclick="openEditResModal(' + r.id + ')">&#9998; Edit</button>' : '') +
             '</td></tr>';
     }).join('');
     $('#tableContainer').html(
