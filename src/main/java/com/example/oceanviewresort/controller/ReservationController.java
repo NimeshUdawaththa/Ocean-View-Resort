@@ -203,6 +203,32 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        // ── checkin ───────────────────────────────────────────────────────────
+        if ("checkin".equals(action)) {
+            int id = parseId(nullToEmpty(req.getParameter("id")));
+            if (id <= 0) { badRequest(resp, out, "Valid reservation id required."); return; }
+
+            boolean ok = svc.checkIn(id);
+            JsonObject json = new JsonObject();
+            json.addProperty("success", ok);
+            json.addProperty("message", ok ? "Guest checked in successfully." : "Check-in failed \u2013 reservation not found or not active.");
+            out.print(json);
+            return;
+        }
+
+        // ── checkout ──────────────────────────────────────────────────────────
+        if ("checkout".equals(action)) {
+            int id = parseId(nullToEmpty(req.getParameter("id")));
+            if (id <= 0) { badRequest(resp, out, "Valid reservation id required."); return; }
+
+            boolean ok = svc.checkOut(id);
+            JsonObject json = new JsonObject();
+            json.addProperty("success", ok);
+            json.addProperty("message", ok ? "Guest checked out successfully." : "Check-out failed \u2013 reservation not checked in.");
+            out.print(json);
+            return;
+        }
+
         badRequest(resp, out, "Unknown action.");
     }
 

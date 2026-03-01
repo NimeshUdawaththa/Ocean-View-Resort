@@ -95,10 +95,36 @@ public class ReservationDAO {
         }
     }
 
+    // ── Manual Check In ────────────────────────────────────────────────────────
+    public boolean checkIn(int id) {
+        String sql = "UPDATE reservations SET status='checked_in' WHERE id=? AND status='active'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] checkIn error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ── Manual Check Out ───────────────────────────────────────────────────────
+    public boolean checkOut(int id) {
+        String sql = "UPDATE reservations SET status='checked_out' WHERE id=? AND status='checked_in'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("[ReservationDAO] checkOut error: " + e.getMessage());
+            return false;
+        }
+    }
+
     // ── Expire checked-out reservations (called by scheduler) ─────────────────
     /**
-     * Finds every active reservation whose check-out date is in the past,
-     * marks it as 'checked_out', and frees its room back to 'available'.
+     * Finds every active or checked-in reservation whose check-out date is in
+     * the past, marks it as 'checked_out', and frees its room back to 'available'.
      * @return number of reservations expired
      */
     public int expireCheckedOut() {
@@ -106,11 +132,11 @@ public class ReservationDAO {
             "UPDATE rooms SET status = 'available' " +
             "WHERE id IN (" +
             "  SELECT room_id FROM reservations " +
-            "  WHERE status = 'active' AND check_out_date < CURDATE()" +
+            "  WHERE status IN ('active','checked_in') AND check_out_date < CURDATE()" +
             "  AND room_id IS NOT NULL AND room_id > 0)";
         String expireSql =
             "UPDATE reservations SET status = 'checked_out' " +
-            "WHERE status = 'active' AND check_out_date < CURDATE()";
+            "WHERE status IN ('active','checked_in') AND check_out_date < CURDATE()";
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try (Statement st = conn.createStatement()) {

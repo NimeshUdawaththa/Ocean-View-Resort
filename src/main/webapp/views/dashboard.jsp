@@ -84,7 +84,12 @@
         .badge { display:inline-block; padding:4px 11px; border-radius:20px; font-size:12px; font-weight:700; }
         .badge-active     { background:#e8f8ee; color:#1b6b33; }
         .badge-checkedout { background:#e6f7fd; color:#0a4f6e; }
+        .badge-checkin    { background:#fff8e1; color:#e65100; }
         .badge-cancelled  { background:#fde8e8; color:#c0392b; }
+        .btn-checkin  { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-checkin:hover  { background:#ffc107; color:#1a1a1a; }
+        .btn-checkout { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#d1ecf1; color:#0c5460; transition:all .2s; margin-right:3px; }
+        .btn-checkout:hover { background:#17a2b8; color:white; }
         .badge-available  { background:#e8f8ee; color:#1b6b33; }
         .badge-occupied   { background:#fde8e8; color:#c0392b; }
         .badge-maintenance{ background:#fff3e0; color:#b7690a; }
@@ -259,9 +264,12 @@
     <!-- RESERVATIONS TAB -->
     <div id="tab-reservations" class="tab-pane active">
         <div class="filter-bar">
-            <button class="filter-btn active" id="filterAll"    onclick="applyFilter('all')">All</button>
-            <button class="filter-btn"        id="filterActive" onclick="applyFilter('active')">Active</button>
-            <button class="filter-btn"        id="filterToday"  onclick="applyFilter('today')">Today's Check-ins</button>
+            <button class="filter-btn active" id="filterAll"         onclick="applyFilter('all')">All</button>
+            <button class="filter-btn"        id="filterActive"      onclick="applyFilter('active')">Active</button>
+            <button class="filter-btn"        id="filterToday"       onclick="applyFilter('today')">Today's Check-ins</button>
+            <button class="filter-btn"        id="filterCheckedIn"   onclick="applyFilter('checked_in')">Checked In</button>
+            <button class="filter-btn"        id="filterCheckedOut"  onclick="applyFilter('checked_out')">Checked Out</button>
+            <button class="filter-btn"        id="filterCancelled"   onclick="applyFilter('cancelled')">Cancelled</button>
         </div>
         <div class="table-card">
             <div class="table-toolbar">
@@ -754,9 +762,12 @@ function updateStats() {
 function applyFilter(f) {
     activeFilter = f;
     $('.filter-btn[id^=filter]').removeClass('active');
-    if (f === 'all')    $('#filterAll').addClass('active');
-    if (f === 'active') $('#filterActive').addClass('active');
-    if (f === 'today')  $('#filterToday').addClass('active');
+    if (f === 'all')         $('#filterAll').addClass('active');
+    if (f === 'active')      $('#filterActive').addClass('active');
+    if (f === 'today')       $('#filterToday').addClass('active');
+    if (f === 'checked_in')  $('#filterCheckedIn').addClass('active');
+    if (f === 'checked_out') $('#filterCheckedOut').addClass('active');
+    if (f === 'cancelled')   $('#filterCancelled').addClass('active');
     renderTable();
 }
 
@@ -764,15 +775,18 @@ function renderTable() {
     var q = ($('#searchInput').val() || '').toLowerCase();
     var list = allReservations.filter(function(r) {
         var mf = activeFilter === 'all' ||
-            (activeFilter === 'active' && r.status === 'active') ||
-            (activeFilter === 'today'  && r.checkInDate === today);
+            (activeFilter === 'active'      && r.status === 'active') ||
+            (activeFilter === 'today'       && r.checkInDate === today) ||
+            (activeFilter === 'checked_in'  && r.status === 'checked_in') ||
+            (activeFilter === 'checked_out' && r.status === 'checked_out') ||
+            (activeFilter === 'cancelled'   && r.status === 'cancelled');
         var ms = !q || r.guestName.toLowerCase().includes(q) ||
             r.reservationNumber.toLowerCase().includes(q) || r.roomType.toLowerCase().includes(q);
         return mf && ms;
     });
     if (!list.length) { $('#tableContainer').html('<div class="empty-state"><div class="es-icon">&#128100;</div><p>No reservations found.</p></div>'); return; }
     var rows = list.map(function(r, i) {
-        var badge = r.status === 'active' ? 'badge-active' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
+        var badge = r.status === 'active' ? 'badge-active' : r.status === 'checked_in' ? 'badge-checkin' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
         return '<tr onclick="openDetailModal(' + r.id + ')">' +
             '<td>' + (i+1) + '</td><td><strong>' + esc(r.reservationNumber) + '</strong></td>' +
             '<td>' + esc(r.guestName) + '</td><td>' + esc(r.roomType) + '</td>' +
@@ -783,6 +797,8 @@ function renderTable() {
             '<td onclick="event.stopPropagation()">' +
               '<button class="btn-view" onclick="openDetailModal(' + r.id + ')">Details</button>' +
               '<button class="btn-bill" onclick="openBillModal(' + r.id + ')">Bill</button>' +
+              (r.status === 'active' ? '<button class="btn-checkin" onclick="doCheckIn(' + r.id + ')">&#10003; Check In</button>' : '') +
+              (r.status === 'checked_in' ? '<button class="btn-checkout" onclick="doCheckOut(' + r.id + ')">&#10004; Check Out</button>' : '') +
               (r.status === 'active' ? '<button class="btn-edit" onclick="openEditResModal(' + r.id + ')">&#9998; Edit</button>' : '') +
             '</td></tr>';
     }).join('');
@@ -1040,6 +1056,22 @@ function openCancelResModal(id) {
     $('#cancelResModal').addClass('show');
 }
 function closeCancelResModal() { $('#cancelResModal').removeClass('show'); cancelResTarget = null; }
+function doCheckIn(id) {
+    $.ajax({ url: apiBase, type: 'POST', dataType: 'json', data: { action: 'checkin', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
+function doCheckOut(id) {
+    $.ajax({ url: apiBase, type: 'POST', dataType: 'json', data: { action: 'checkout', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); loadRooms(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
 function confirmCancelReservation() {
     if (!cancelResTarget) return;
     var $btn = $('#btnConfirmCancelRes').prop('disabled', true).text('Cancelling\u2026');

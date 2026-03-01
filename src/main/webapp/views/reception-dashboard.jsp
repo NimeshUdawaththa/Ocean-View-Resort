@@ -82,9 +82,12 @@
         .badge { display:inline-block; padding:4px 11px; border-radius:20px; font-size:11.5px; font-weight:700; }
         .badge-active     { background:#e8f8ee; color:#1b6b33; }
         .badge-checkedout { background:#e6f7fd; color:#0a4f6e; }
+        .badge-checkin    { background:#fff8e1; color:#e65100; }
         .badge-cancelled  { background:#fde8e8; color:#c0392b; }
-
-        /* Row buttons */
+        .btn-checkin  { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-checkin:hover  { background:#ffc107; color:#1a1a1a; }
+        .btn-checkout { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#d1ecf1; color:#0c5460; transition:all .2s; margin-right:3px; }
+        .btn-checkout:hover { background:#17a2b8; color:white; }
         .btn-view   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
         .btn-view:hover   { background:#1aa3c8; color:white; }
         .btn-bill   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1b6b33; transition:all .2s; margin-right:3px; }
@@ -247,6 +250,7 @@
         <div class="filter-bar">
             <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
             <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
+            <button class="filter-btn" onclick="setFilter('checked_in',this)">Checked In</button>
             <button class="filter-btn" onclick="setFilter('checked_out',this)">Checked Out</button>
             <button class="filter-btn" onclick="setFilter('cancelled',this)">Cancelled</button>
         </div>
@@ -623,10 +627,12 @@ function renderResTable() {
 
     var rows = list.map(function(r, i) {
         var badge = r.status === 'active' ? 'badge-active' :
+                    r.status === 'checked_in' ? 'badge-checkin' :
                     r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
-        var actBtns = r.status === 'active'
-            ? '<button class="btn-edit" onclick="event.stopPropagation();openEditResModal(' + r.id + ')">&#9998; Edit</button>'
-            : '';
+        var actBtns =
+            (r.status === 'active' ? '<button class="btn-checkin" onclick="event.stopPropagation();doCheckIn('+r.id+')">&#10003; Check In</button>' : '') +
+            (r.status === 'checked_in' ? '<button class="btn-checkout" onclick="event.stopPropagation();doCheckOut('+r.id+')">&#10004; Check Out</button>' : '') +
+            (r.status === 'active' ? '<button class="btn-edit" onclick="event.stopPropagation();openEditResModal(' + r.id + ')">&#9998; Edit</button>' : '');
         return '<tr onclick="openDetailModal(' + r.id + ')">' +
             '<td>'+(i+1)+'</td>' +
             '<td><strong>'+esc(r.reservationNumber)+'</strong></td>' +
@@ -828,7 +834,10 @@ function closeDetailModal() { $('#detailModal').removeClass('show'); }
 
 function renderDetailContent(r) {
     var badge = r.status === 'active' ? 'badge-active' :
+                r.status === 'checked_in' ? 'badge-checkin' :
                 r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
+    var actionBtns = r.status === 'active' ? '<button class="btn-checkin" onclick="closeDetailModal();doCheckIn('+r.id+')">&#10003; Check In</button>' :
+                     r.status === 'checked_in' ? '<button class="btn-checkout" onclick="closeDetailModal();doCheckOut('+r.id+')">&#10004; Check Out</button>' : '';
     $('#detailContent').html(
         drow('Reservation #','<strong>'+esc(r.reservationNumber)+'</strong>') +
         drow('Status','<span class="badge '+badge+'">'+esc(r.status)+'</span>') +
@@ -840,7 +849,8 @@ function renderDetailContent(r) {
         drow('Check-out',  esc(r.checkOutDate)) +
         drow('Total',      '<strong>$'+esc(r.totalAmount)+'</strong>') +
         drow('Created By', esc(r.createdByName||'\u2014')) +
-        drow('Created At', esc(r.createdAt))
+        drow('Created At', esc(r.createdAt)) +
+        (actionBtns ? '<div style="margin-top:16px;text-align:right;">' + actionBtns + '</div>' : '')
     );
 }
 
@@ -848,8 +858,22 @@ function showBillFromDetail() {
     closeDetailModal();
     if (currentDetailId) openBillModal(currentDetailId);
 }
-
-/* === EDIT RESERVATION === */
+function doCheckIn(id) {
+    $.ajax({ url: apiRes, type: 'POST', dataType: 'json', data: { action: 'checkin', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
+function doCheckOut(id) {
+    $.ajax({ url: apiRes, type: 'POST', dataType: 'json', data: { action: 'checkout', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); loadRooms(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
 function openEditResModal(id) {
     $.ajax({ url:apiRes+'?id='+id, type:'GET', dataType:'json',
         success: function(res) {

@@ -154,8 +154,22 @@ public class ReservationService {
         }
     }
 
+    // ── Manual Check In ───────────────────────────────────────────────────────
+    public boolean checkIn(int id) {
+        return reservationDAO.checkIn(id);
+    }
+
+    // ── Manual Check Out ──────────────────────────────────────────────────────
+    public boolean checkOut(int id) {
+        Reservation r = reservationDAO.findById(id);
+        boolean ok = reservationDAO.checkOut(id);
+        if (ok && r != null && r.getRoomId() > 0)
+            roomDAO.updateStatus(r.getRoomId(), Room.STATUS_AVAILABLE);
+        return ok;
+    }
+
     // ── Expire checked-out reservations ─────────────────────────────────────
-    /** Marks past-checkout active reservations as checked_out and frees their rooms. */
+    /** Marks past-checkout active/checked_in reservations as checked_out and frees their rooms. */
     public void expireCheckedOut() {
         reservationDAO.expireCheckedOut();
     }
