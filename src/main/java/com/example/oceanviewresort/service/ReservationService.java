@@ -1,11 +1,14 @@
 package com.example.oceanviewresort.service;
 
+import com.example.oceanviewresort.dao.GuestDAO;
 import com.example.oceanviewresort.dao.ReservationDAO;
 import com.example.oceanviewresort.dao.RoomDAO;
 import com.example.oceanviewresort.dto.BillDTO;
 import com.example.oceanviewresort.dto.ReservationDTO;
+import com.example.oceanviewresort.model.Guest;
 import com.example.oceanviewresort.model.Reservation;
 import com.example.oceanviewresort.model.Room;
+import com.example.oceanviewresort.util.EmailUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,6 +30,7 @@ public class ReservationService {
 
     private final ReservationDAO reservationDAO = new ReservationDAO();
     private final RoomDAO         roomDAO        = new RoomDAO();
+    private final GuestDAO        guestDAO       = new GuestDAO();
 
     // ── Add Reservation ───────────────────────────────────────────────────────
     /**
@@ -182,6 +186,19 @@ public class ReservationService {
         if (ok && r != null && r.getRoomId() > 0) {
             roomDAO.updateStatus(r.getRoomId(), Room.STATUS_AVAILABLE);
         }
+        // Send cancellation email to guest
+        if (ok && r != null) {
+            try {
+                Guest guest = guestDAO.findByMobile(r.getContactNumber());
+                if (guest != null && guest.getEmail() != null && !guest.getEmail().isBlank()) {
+                    EmailUtil.sendCancellation(guest.getEmail(), r);
+                } else {
+                    System.out.println("[ReservationService] No guest email for cancellation notice: " + r.getContactNumber());
+                }
+            } catch (Exception e) {
+                System.err.println("[ReservationService] Cancellation email failed: " + e.getMessage());
+            }
+        }
         return ok;
     }
 
@@ -199,7 +216,7 @@ public class ReservationService {
         double tax      = subtotal * Reservation.TAX_RATE;
         double total    = subtotal + tax;
 
-        return new BillDTO(
+        BillDTO dto = new BillDTO(
             r.getReservationNumber(),
             r.getGuestName(),
             r.getAddress()      != null ? r.getAddress()               : "",
@@ -215,6 +232,12 @@ public class ReservationService {
             String.format("%.2f", total),
             r.getStatus()
         );
+        // Lookup guest email by mobile/contact number
+        Guest guest = guestDAO.findByMobile(r.getContactNumber());
+        if (guest != null && guest.getEmail() != null && !guest.getEmail().isBlank()) {
+            dto.setGuestEmail(guest.getEmail());
+        }
+        return dto;
     }
 
     // ── Mapper: Reservation entity → ReservationDTO ───────────────────────────

@@ -5,6 +5,7 @@ import com.example.oceanviewresort.dto.BillDTO;
 import com.example.oceanviewresort.dto.ReservationDTO;
 import com.example.oceanviewresort.model.User;
 import com.example.oceanviewresort.service.ReservationService;
+import com.example.oceanviewresort.util.EmailUtil;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import jakarta.servlet.annotation.WebServlet;
@@ -229,6 +230,40 @@ public class ReservationController extends HttpServlet {
             return;
         }
 
+        // ── sendbill ──────────────────────────────────────────────────────────
+        if ("sendbill".equals(action)) {
+            int id = parseId(nullToEmpty(req.getParameter("id")));
+            if (id <= 0) { badRequest(resp, out, "Valid reservation id required."); return; }
+
+            BillDTO bill = svc.calculateBill(id);
+            if (bill == null) { notFound(resp, out, "Reservation not found."); return; }
+
+            // Use email submitted from UI; fall back to DB-looked-up email
+            String emailParam = nullToEmpty(req.getParameter("email")).trim();
+            String guestEmail = emailParam.isEmpty() ? bill.getGuestEmail() : emailParam;
+
+            JsonObject json = new JsonObject();
+            if (guestEmail == null || guestEmail.isBlank()) {
+                json.addProperty("success", false);
+                json.addProperty("message", "Please enter an email address.");
+                out.print(json);
+                return;
+            }
+
+            try {
+                EmailUtil.sendBill(guestEmail, bill);
+                json.addProperty("success", true);
+                json.addProperty("message", "Bill emailed to " + guestEmail);
+            } catch (Exception e) {
+                System.err.println("[ReservationController] sendbill error: " + e.getMessage());
+                e.printStackTrace();
+                json.addProperty("success", false);
+                json.addProperty("message", "Email failed: " + e.getMessage());
+            }
+            out.print(json);
+            return;
+        }
+
         badRequest(resp, out, "Unknown action.");
     }
 
@@ -268,6 +303,7 @@ public class ReservationController extends HttpServlet {
         o.addProperty("tax",               b.getTax());
         o.addProperty("total",             b.getTotal());
         o.addProperty("status",            b.getStatus());
+        o.addProperty("guestEmail",        b.getGuestEmail() != null ? b.getGuestEmail() : "");
         return o;
     }
 
