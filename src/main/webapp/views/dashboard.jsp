@@ -271,6 +271,7 @@
         <button class="tab-btn"        onclick="showTab('rooms')">&#127968; Rooms</button>
         <button class="tab-btn"        onclick="showTab('guests')">&#128101; Guests</button>
         <button class="tab-btn"        onclick="showTab('staff')">&#128100; Staff</button>
+        <button class="tab-btn"        onclick="showTab('help')">&#10067; Help</button>
     </div>
 
     <div id="alertBox" class="alert"></div>
@@ -351,6 +352,73 @@
             </div>
             <div id="staffTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading staff&hellip;</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HELP TAB -->
+    <div id="tab-help" class="tab-pane">
+        <div class="table-card" style="padding:28px 32px;">
+            <h2 style="margin:0 0 6px;color:#1a3a4a;font-size:1.5rem;">&#10067; Help &amp; Guide</h2>
+            <p style="margin:0 0 24px;color:#6b8a9a;font-size:0.92rem;">Quick reference for using OceanView Resort Management System.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
+
+                <div style="background:#eef7ff;border:1px solid #bcd9f0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#0a4f6e;font-size:1rem;">&#128203; Reservations</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>Click <strong>+ Add Reservation</strong> to create a new booking.</li>
+                        <li>Use <strong>Today&#8217;s Check-ins</strong> filter to view arrivals due today.</li>
+                        <li>Use <strong>Today&#8217;s Check-outs</strong> filter to view departures due today.</li>
+                        <li>Click a row to expand reservation details.</li>
+                        <li>Use <strong>Check In</strong> / <strong>Check Out</strong> buttons on confirmed reservations.</li>
+                        <li>Click <strong>&#128084; Bill</strong> to send the bill receipt by email.</li>
+                        <li>Cancelling a reservation automatically emails the guest.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#f0fff4;border:1px solid #b2dfc0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#1a7a4e;font-size:1rem;">&#127968; Rooms</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>View all rooms and their current status.</li>
+                        <li>Filter by <strong>Available</strong>, <strong>Occupied</strong>, or <strong>Maintenance</strong>.</li>
+                        <li>Use the search box to find a room by number or type.</li>
+                        <li>Click <strong>+ Add Room</strong> to register a new room.</li>
+                        <li>Edit room details or change status via the action buttons.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#fffbee;border:1px solid #e8d89a;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#856404;font-size:1rem;">&#128101; Guests</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>Search guests by name or NIC using the search box.</li>
+                        <li>Click any row to view the full guest profile.</li>
+                        <li>Click <strong>&#9998; Edit</strong> to update guest information.</li>
+                        <li>Click <strong>&#10006; Delete</strong> to permanently remove a guest record.</li>
+                        <li>Click <strong>&#128203; Reserve</strong> to make a new reservation for that guest.</li>
+                        <li>Click <strong>+ Register Guest</strong> to add a new guest to the system.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#fff0f8;border:1px solid #e0b0d0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#8b1a5a;font-size:1rem;">&#128100; Staff</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>View all staff accounts: Managers and Reception staff.</li>
+                        <li>Filter by role using the <strong>Managers</strong> or <strong>Reception</strong> buttons.</li>
+                        <li>Click <strong>+ Add Staff</strong> to create a new user account.</li>
+                        <li>Edit existing accounts or reset passwords as needed.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#f4f0ff;border:1px solid #c8b8f0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#5b21b6;font-size:1rem;">&#128084; Bill &amp; Email</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>After a guest checks out, click <strong>&#128084; Bill</strong> on the reservation row.</li>
+                        <li>The system calculates the total and sends a detailed receipt to the guest&#8217;s email.</li>
+                        <li>When cancelling, the system auto-emails the guest a cancellation notice.</li>
+                        <li>Ensure the guest&#8217;s email is registered for email features to work.</li>
+                    </ul>
+                </div>
+
             </div>
         </div>
     </div>
