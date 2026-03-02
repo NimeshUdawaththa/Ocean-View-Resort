@@ -82,9 +82,12 @@
         .badge { display:inline-block; padding:4px 11px; border-radius:20px; font-size:11.5px; font-weight:700; }
         .badge-active     { background:#e8f8ee; color:#1b6b33; }
         .badge-checkedout { background:#e6f7fd; color:#0a4f6e; }
+        .badge-checkin    { background:#fff8e1; color:#e65100; }
         .badge-cancelled  { background:#fde8e8; color:#c0392b; }
-
-        /* Row buttons */
+        .btn-checkin  { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-checkin:hover  { background:#ffc107; color:#1a1a1a; }
+        .btn-checkout { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#d1ecf1; color:#0c5460; transition:all .2s; margin-right:3px; }
+        .btn-checkout:hover { background:#17a2b8; color:white; }
         .btn-view   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
         .btn-view:hover   { background:#1aa3c8; color:white; }
         .btn-bill   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1b6b33; transition:all .2s; margin-right:3px; }
@@ -95,6 +98,12 @@
         .btn-cancel-res:hover { background:#e04b3a; color:white; }
         .btn-guest-view { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
         .btn-guest-view:hover { background:#1aa3c8; color:white; }
+        .btn-reserve { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-reserve:hover { background:#ffc107; color:#1a1a1a; }
+        .btn-guest-edit   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1a7a4e; transition:all .2s; margin-right:3px; }
+        .btn-guest-edit:hover   { background:#27ae60; color:white; }
+        .btn-guest-delete { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fdecea; color:#c0392b; transition:all .2s; margin-right:3px; }
+        .btn-guest-delete:hover { background:#e04b3a; color:white; }
 
         /* Primary/secondary buttons */
         .btn-primary   { display:inline-flex; align-items:center; gap:7px; padding:9px 20px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); color:white; border:none; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(13,122,154,.28); transition:transform .2s; }
@@ -172,6 +181,9 @@
         .bill-total-row td { font-size:15px; font-weight:800; color:#0a4f6e; border-top:2px solid #0a4f6e; padding-top:12px; }
         .btn-print { padding:10px 24px; background:linear-gradient(135deg,#1e8449,#34a853); color:white; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 14px rgba(52,168,83,.3); transition:transform .2s; }
         .btn-print:hover { transform:translateY(-1px); }
+        .btn-email { padding:10px 18px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); color:white; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:transform .2s; }
+        .btn-email:hover { transform:translateY(-1px); opacity:.92; }
+        .btn-email:disabled { opacity:.50; cursor:not-allowed; transform:none; }
 
         /* Guest history */
         .history-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:6px; }
@@ -240,6 +252,7 @@
         <button class="tab-btn active" onclick="switchTab('res',this)">&#128203; Reservations</button>
         <button class="tab-btn"        onclick="switchTab('guests',this)">&#128100; Guests</button>
         <button class="tab-btn"        onclick="switchTab('rooms',this)">&#127968; Rooms</button>
+        <button class="tab-btn"        onclick="switchTab('help',this)">&#10067; Help</button>
     </div>
 
     <!-- RESERVATIONS TAB -->
@@ -247,6 +260,9 @@
         <div class="filter-bar">
             <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
             <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
+            <button class="filter-btn" onclick="setFilter('today_checkin',this)">Today's Check-ins</button>
+            <button class="filter-btn" onclick="setFilter('today_checkout',this)">Today's Check-outs</button>
+            <button class="filter-btn" onclick="setFilter('checked_in',this)">Checked In</button>
             <button class="filter-btn" onclick="setFilter('checked_out',this)">Checked Out</button>
             <button class="filter-btn" onclick="setFilter('cancelled',this)">Cancelled</button>
         </div>
@@ -305,6 +321,52 @@
             </div>
             <div id="roomTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading rooms&#8230;</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HELP TAB -->
+    <div id="tab-help" class="tab-pane">
+        <div class="table-card" style="padding:28px 32px;">
+            <h2 style="margin:0 0 6px;color:#1a3a4a;font-size:1.5rem;">&#10067; Help &amp; Guide</h2>
+            <p style="margin:0 0 24px;color:#6b8a9a;font-size:0.92rem;">Quick reference for using OceanView Resort Management System.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
+
+                <div style="background:#eef7ff;border:1px solid #bcd9f0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#0a4f6e;font-size:1rem;">&#128203; Reservations</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>Click <strong>+ New Reservation</strong> to create a new booking.</li>
+                        <li>Use <strong>Today&#8217;s Check-ins</strong> to see guests arriving today.</li>
+                        <li>Use <strong>Today&#8217;s Check-outs</strong> to see guests departing today.</li>
+                        <li>Click <strong>Check In</strong> on an arrival to complete the check-in process.</li>
+                        <li>Click <strong>Check Out</strong> on a departure to finalize the stay.</li>
+                        <li>Click <strong>&#128084; Bill</strong> on a checked-out reservation to email the receipt.</li>
+                        <li>Cancelling a reservation automatically sends a cancellation email to the guest.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#fffbee;border:1px solid #e8d89a;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#856404;font-size:1rem;">&#128100; Guests</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>Search guests by name or NIC using the search box.</li>
+                        <li>Click any row to view the full guest profile.</li>
+                        <li>Click <strong>&#9998; Edit</strong> to update guest information.</li>
+                        <li>Click <strong>&#10006; Delete</strong> to permanently remove a guest record.</li>
+                        <li>Click <strong>&#128203; Reserve</strong> to make a new reservation directly for that guest.</li>
+                        <li>Click the green <strong>+ Register Guest</strong> button to add a new guest.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#f0fff4;border:1px solid #b2dfc0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#1a7a4e;font-size:1rem;">&#127968; Rooms</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>View the current status of all rooms.</li>
+                        <li>Filter by <strong>Available</strong>, <strong>Occupied</strong>, or <strong>Maintenance</strong>.</li>
+                        <li>Use the search box to find a room by number or type.</li>
+                        <li>Room status updates automatically when guests check in and out.</li>
+                    </ul>
+                </div>
+
             </div>
         </div>
     </div>
@@ -446,9 +508,14 @@
         <button class="btn-close" onclick="closeBillModal()">&#10005;</button>
     </div>
     <div id="billContent"></div>
+    <div style="padding:10px 20px 2px;display:flex;align-items:center;gap:8px;border-top:1px solid #e6eff5;">
+        <label style="font-size:13px;color:#7a95a8;white-space:nowrap;">Send to:</label>
+        <input type="email" id="billEmailInput" placeholder="guest@email.com" style="flex:1;padding:8px 12px;border:1.5px solid #dce8ee;border-radius:8px;font-size:13px;color:#1e3a4a;outline:none;" />
+    </div>
     <div class="modal-footer">
         <button class="btn-mcancel" onclick="closeBillModal()">Close</button>
         <button class="btn-print"   onclick="printBill()">&#128424; Print Bill</button>
+        <button class="btn-email"   id="btnEmailBill" onclick="emailBill()">&#128231; Email Bill</button>
     </div>
   </div>
 </div>
@@ -493,6 +560,19 @@
     <div class="modal-footer">
         <button class="btn-mcancel" onclick="closeEditGuestModal()">Cancel</button>
         <button class="btn-msave"   id="btnSaveEditGuest" onclick="saveEditGuest()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Guest Confirm -->
+<div class="modal-overlay" id="deleteGuestModal">
+  <div class="modal" style="max-width:420px;text-align:center;padding:36px 36px 30px;">
+    <div style="font-size:50px;margin-bottom:14px;">&#128465;&#65039;</div>
+    <h2 style="font-size:20px;font-weight:700;color:#1e3a4a;margin-bottom:8px;">Delete Guest?</h2>
+    <p style="font-size:14.5px;color:#7a95a8;">Delete <strong id="deleteGuestLabel" style="color:#1e3a4a;"></strong>? This cannot be undone.</p>
+    <div class="modal-footer" style="justify-content:center;margin-top:20px;">
+        <button class="btn-mcancel" onclick="closeDeleteGuestModal()">Cancel</button>
+        <button class="btn-msave" id="btnConfirmDeleteGuest" style="background:linear-gradient(135deg,#a93226,#e04b3a);" onclick="confirmDeleteGuest()">Delete Guest</button>
     </div>
   </div>
 </div>
@@ -609,7 +689,9 @@ function setFilter(f, btn) {
 function renderResTable() {
     var q = ($('#resSearch').val()||'').toLowerCase();
     var list = allReservations.filter(function(r){
-        if (resFilter !== 'all' && r.status !== resFilter) return false;
+        if (resFilter === 'today_checkin'  && r.checkInDate  !== today) return false;
+        if (resFilter === 'today_checkout' && r.checkOutDate !== today) return false;
+        if (resFilter !== 'all' && resFilter !== 'today_checkin' && resFilter !== 'today_checkout' && r.status !== resFilter) return false;
         return !q || r.guestName.toLowerCase().includes(q) ||
                r.reservationNumber.toLowerCase().includes(q) ||
                (r.contactNumber||'').includes(q) ||
@@ -623,10 +705,12 @@ function renderResTable() {
 
     var rows = list.map(function(r, i) {
         var badge = r.status === 'active' ? 'badge-active' :
+                    r.status === 'checked_in' ? 'badge-checkin' :
                     r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
-        var actBtns = r.status === 'active'
-            ? '<button class="btn-edit" onclick="event.stopPropagation();openEditResModal(' + r.id + ')">&#9998; Edit</button>'
-            : '';
+        var actBtns =
+            (r.status === 'active' ? '<button class="btn-checkin" onclick="event.stopPropagation();doCheckIn('+r.id+')">&#10003; Check In</button>' : '') +
+            (r.status === 'checked_in' || (r.status === 'active' && resFilter === 'today_checkout') ? '<button class="btn-checkout" onclick="event.stopPropagation();doCheckOut('+r.id+')">&#10004; Check Out</button>' : '') +
+            (r.status === 'active' ? '<button class="btn-edit" onclick="event.stopPropagation();openEditResModal(' + r.id + ')">&#9998; Edit</button>' : '');
         return '<tr onclick="openDetailModal(' + r.id + ')">' +
             '<td>'+(i+1)+'</td>' +
             '<td><strong>'+esc(r.reservationNumber)+'</strong></td>' +
@@ -828,7 +912,10 @@ function closeDetailModal() { $('#detailModal').removeClass('show'); }
 
 function renderDetailContent(r) {
     var badge = r.status === 'active' ? 'badge-active' :
+                r.status === 'checked_in' ? 'badge-checkin' :
                 r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
+    var actionBtns = r.status === 'active' ? '<button class="btn-checkin" onclick="closeDetailModal();doCheckIn('+r.id+')">&#10003; Check In</button>' :
+                     r.status === 'checked_in' ? '<button class="btn-checkout" onclick="closeDetailModal();doCheckOut('+r.id+')">&#10004; Check Out</button>' : '';
     $('#detailContent').html(
         drow('Reservation #','<strong>'+esc(r.reservationNumber)+'</strong>') +
         drow('Status','<span class="badge '+badge+'">'+esc(r.status)+'</span>') +
@@ -840,7 +927,8 @@ function renderDetailContent(r) {
         drow('Check-out',  esc(r.checkOutDate)) +
         drow('Total',      '<strong>$'+esc(r.totalAmount)+'</strong>') +
         drow('Created By', esc(r.createdByName||'\u2014')) +
-        drow('Created At', esc(r.createdAt))
+        drow('Created At', esc(r.createdAt)) +
+        (actionBtns ? '<div style="margin-top:16px;text-align:right;">' + actionBtns + '</div>' : '')
     );
 }
 
@@ -848,8 +936,22 @@ function showBillFromDetail() {
     closeDetailModal();
     if (currentDetailId) openBillModal(currentDetailId);
 }
-
-/* === EDIT RESERVATION === */
+function doCheckIn(id) {
+    $.ajax({ url: apiRes, type: 'POST', dataType: 'json', data: { action: 'checkin', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
+function doCheckOut(id) {
+    $.ajax({ url: apiRes, type: 'POST', dataType: 'json', data: { action: 'checkout', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); loadRooms(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
 function openEditResModal(id) {
     $.ajax({ url:apiRes+'?id='+id, type:'GET', dataType:'json',
         success: function(res) {
@@ -930,7 +1032,9 @@ function confirmCancelReservation() {
 }
 
 /* === BILL === */
+var currentBillResId = null;
 function openBillModal(id) {
+    currentBillResId = id;
     $.ajax({ url:apiRes+'?action=bill&id='+id, type:'GET', dataType:'json',
         success: function(res) {
             if (res.success) showBillData(res.bill);
@@ -939,6 +1043,26 @@ function openBillModal(id) {
     });
 }
 function closeBillModal() { $('#billModal').removeClass('show'); }
+function emailBill() {
+    if (!currentBillResId) return;
+    var email = $('#billEmailInput').val().trim();
+    if (!email) { showAlert('error', 'Please enter an email address.'); return; }
+    var $btn = $('#btnEmailBill').prop('disabled', true).text('Sending\u2026');
+    $.ajax({
+        url: apiRes, type: 'POST', dataType: 'json',
+        data: { action: 'sendbill', id: currentBillResId, email: email },
+        success: function(res) {
+            $btn.prop('disabled', false).html('&#128231; Email Bill');
+            if (res.success) showAlert('success', '\u2714 ' + res.message);
+            else             showAlert('error',   res.message);
+        },
+        error: function(xhr) {
+            $btn.prop('disabled', false).html('&#128231; Email Bill');
+            var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : xhr.responseText || 'Failed to send email.';
+            showAlert('error', msg);
+        }
+    });
+}
 
 function printBill() {
     var c = document.getElementById('billContent').innerHTML;
@@ -957,6 +1081,7 @@ function printBill() {
 }
 
 function showBillData(b) {
+    $('#billEmailInput').val(b.guestEmail || '');
     $('#billContent').html(
         '<div class="bill-header-box"><h3>&#9875; OceanView Resort</h3><p>Guest Bill &amp; Invoice</p></div>' +
         '<table class="bill-table">' +
@@ -1013,6 +1138,8 @@ function renderGuestTable() {
             '<td onclick="event.stopPropagation()">' +
               '<button class="btn-guest-view" onclick="openGuestDetailModal('+g.id+')">Profile</button>' +
               '<button class="btn-primary" style="padding:5px 12px;font-size:12px;box-shadow:none;" onclick="event.stopPropagation();newResForGuest('+g.id+')">&#128203; Reserve</button>' +
+              '<button class="btn-guest-edit" onclick="event.stopPropagation();openEditGuestModal('+g.id+')">&#9998; Edit</button>' +
+              '<button class="btn-guest-delete" onclick="event.stopPropagation();openDeleteGuestModal('+g.id+',\'' + esc(g.fullName) + '\')" >&#10006; Delete</button>' +
             '</td></tr>';
     }).join('');
 
@@ -1068,7 +1195,8 @@ function openGuestDetailModal(id) {
 function closeGuestDetailModal() { $('#guestDetailModal').removeClass('show'); guestForNewRes = null; }
 
 /* === EDIT GUEST === */
-function openEditGuestModal() {
+function openEditGuestModal(id) {
+    if (id) currentGuestId = id;
     if (!currentGuestId) return;
     var g = allGuests.find(function(x){ return x.id === currentGuestId; });
     if (!g) return;
@@ -1084,6 +1212,28 @@ function openEditGuestModal() {
     setTimeout(function(){ $('#editGuestModal').addClass('show'); }, 200);
 }
 function closeEditGuestModal() { $('#editGuestModal').removeClass('show'); }
+
+var deleteGuestTargetId = null;
+function openDeleteGuestModal(id, name) {
+    deleteGuestTargetId = id;
+    $('#deleteGuestLabel').text(name);
+    $('#deleteGuestModal').addClass('show');
+}
+function closeDeleteGuestModal() { $('#deleteGuestModal').removeClass('show'); deleteGuestTargetId = null; }
+function confirmDeleteGuest() {
+    if (!deleteGuestTargetId) return;
+    var $btn = $('#btnConfirmDeleteGuest').prop('disabled', true).text('Deleting\u2026');
+    $.ajax({ url: apiGuests, type: 'POST', dataType: 'json',
+        data: { action:'delete', id:deleteGuestTargetId },
+        success: function(res) {
+            $btn.prop('disabled', false).text('Delete Guest');
+            closeDeleteGuestModal();
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadGuests(); }
+            else { showAlert('error', res.message); }
+        },
+        error: function() { $btn.prop('disabled', false).text('Delete Guest'); closeDeleteGuestModal(); showAlert('error', 'Failed to delete guest.'); }
+    });
+}
 
 function saveEditGuest() {
     var id       = $('#egId').val();

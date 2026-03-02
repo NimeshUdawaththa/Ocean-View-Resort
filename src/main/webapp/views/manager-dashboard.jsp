@@ -76,6 +76,17 @@
         .search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#8aacbc; font-size:14px; }
         .btn-add-res { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); color:white; border:none; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(13,122,154,.3); transition:transform .2s; }
         .btn-add-res:hover { transform:translateY(-2px); }
+        .toolbar-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .btn-secondary { display:inline-flex; align-items:center; gap:7px; padding:9px 20px; background:linear-gradient(135deg,#1b6b33,#34a853); color:white; border:none; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(52,168,83,.28); transition:transform .2s; }
+        .btn-secondary:hover { transform:translateY(-2px); }
+        .btn-guest-view   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
+        .btn-guest-view:hover   { background:#1aa3c8; color:white; }
+        .btn-guest-edit   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1a7a4e; transition:all .2s; margin-right:3px; }
+        .btn-guest-edit:hover   { background:#27ae60; color:white; }
+        .btn-guest-delete { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fdecea; color:#c0392b; transition:all .2s; margin-right:3px; }
+        .btn-guest-delete:hover { background:#e04b3a; color:white; }
+        .btn-reserve { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-reserve:hover { background:#ffc107; color:#1a1a1a; }
 
         table { width:100%; border-collapse:collapse; }
         thead th { padding:12px 16px; text-align:left; font-size:12px; font-weight:700; color:#7a95a8; text-transform:uppercase; letter-spacing:.5px; background:#f6fafc; border-bottom:2px solid #e8f0f4; white-space:nowrap; }
@@ -87,9 +98,13 @@
         .badge { display:inline-block; padding:4px 11px; border-radius:20px; font-size:12px; font-weight:700; }
         .badge-active     { background:#e8f8ee; color:#1b6b33; }
         .badge-checkedout { background:#e6f7fd; color:#0a4f6e; }
+        .badge-checkin    { background:#fff8e1; color:#e65100; }
         .badge-cancelled  { background:#fde8e8; color:#c0392b; }
-
-        .btn-view { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:4px; }
+        .btn-checkin  { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-checkin:hover  { background:#ffc107; color:#1a1a1a; }
+        .btn-checkout { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#d1ecf1; color:#0c5460; transition:all .2s; margin-right:3px; }
+        .btn-checkout:hover { background:#17a2b8; color:white; }
+        .btn-view { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
         .btn-view:hover { background:#1aa3c8; color:white; }
         .btn-bill { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1b6b33; transition:all .2s; }
         .btn-bill:hover { background:#34a853; color:white; }
@@ -164,6 +179,9 @@
         .bill-total-row td { font-size:15px; font-weight:800; color:#0a4f6e; border-top:2px solid #0a4f6e; padding-top:12px; }
         .btn-print { padding:10px 24px; background:linear-gradient(135deg,#1e8449,#34a853); color:white; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:transform .2s; }
         .btn-print:hover { transform:translateY(-1px); }
+        .btn-email { padding:10px 18px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); color:white; border:none; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:transform .2s; }
+        .btn-email:hover { transform:translateY(-1px); opacity:.92; }
+        .btn-email:disabled { opacity:.50; cursor:not-allowed; transform:none; }
 
 
         @media(max-width:760px) { .stats{grid-template-columns:1fr 1fr;} .form-row2{grid-template-columns:1fr;} }
@@ -248,14 +266,19 @@
         <button class="tab-btn" id="tab-btn-rooms" onclick="showTab('rooms')">&#127968; Rooms</button>
         <button class="tab-btn" id="tab-btn-guests" onclick="showTab('guests')">&#128101; Guests</button>
         <button class="tab-btn" id="tab-btn-staff" onclick="showTab('staff')">&#128100; Staff</button>
+        <button class="tab-btn" id="tab-btn-help"  onclick="showTab('help')">&#10067; Help</button>
     </div>
 
     <!-- RESERVATIONS TAB -->
     <div id="tab-reservations" class="tab-pane active">
         <div class="filter-bar">
-            <button class="filter-btn active" id="filterAll"      onclick="applyFilter('all')">All</button>
-            <button class="filter-btn"         id="filterActive"  onclick="applyFilter('active')">Active</button>
-            <button class="filter-btn"         id="filterToday"   onclick="applyFilter('today')">Today's Check-ins</button>
+            <button class="filter-btn active" id="filterAll"         onclick="applyFilter('all')">All</button>
+            <button class="filter-btn"         id="filterActive"      onclick="applyFilter('active')">Active</button>
+            <button class="filter-btn"         id="filterToday"       onclick="applyFilter('today')">Today's Check-ins</button>
+            <button class="filter-btn"         id="filterTodayOut"    onclick="applyFilter('today_checkout')">Today's Check-outs</button>
+            <button class="filter-btn"         id="filterCheckedIn"   onclick="applyFilter('checked_in')">Checked In</button>
+            <button class="filter-btn"         id="filterCheckedOut"  onclick="applyFilter('checked_out')">Checked Out</button>
+            <button class="filter-btn"         id="filterCancelled"   onclick="applyFilter('cancelled')">Cancelled</button>
         </div>
 
         <div id="alertBox" class="alert"></div>
@@ -292,12 +315,14 @@
     <div id="tab-guests" class="tab-pane">
         <div class="table-card">
             <div class="table-toolbar">
-                <div class="toolbar-title">&#128101; Guest Directory</div>
-                <div class="search-box">
-                    <span class="search-icon">&#128269;</span>
-                    <input type="text" id="guestSearchInput" placeholder="Name, mobile or email…" oninput="renderGuestTable()" />
+                <div class="toolbar-title">&#128100; Registered Guests</div>
+                <div class="toolbar-actions">
+                    <div class="search-box">
+                        <span class="search-icon">&#128269;</span>
+                        <input type="text" id="guestSearch" placeholder="Search name, mobile, NIC…" oninput="renderGuestTable()" />
+                    </div>
+                    <button class="btn-secondary" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
                 </div>
-                <button class="btn-add-res" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
             </div>
             <div id="guestTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading guests…</p></div>
@@ -318,6 +343,71 @@
             </div>
             <div id="staffTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading staff&hellip;</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HELP TAB -->
+    <div id="tab-help" class="tab-pane">
+        <div class="table-card" style="padding:28px 32px;">
+            <h2 style="margin:0 0 6px;color:#1a3a4a;font-size:1.5rem;">&#10067; Help &amp; Guide</h2>
+            <p style="margin:0 0 24px;color:#6b8a9a;font-size:0.92rem;">Quick reference for using OceanView Resort Management System.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
+
+                <div style="background:#eef7ff;border:1px solid #bcd9f0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#0a4f6e;font-size:1rem;">&#128203; Reservations</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>Click <strong>+ Add Reservation</strong> to create a new booking.</li>
+                        <li>Use <strong>Today&#8217;s Check-ins</strong> filter to view arrivals due today.</li>
+                        <li>Use <strong>Today&#8217;s Check-outs</strong> filter to view departures due today.</li>
+                        <li>Click a row to expand reservation details.</li>
+                        <li>Use <strong>Check In</strong> / <strong>Check Out</strong> buttons on confirmed reservations.</li>
+                        <li>Click <strong>&#128084; Bill</strong> to send the bill receipt by email.</li>
+                        <li>Cancelling a reservation automatically emails the guest.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#f0fff4;border:1px solid #b2dfc0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#1a7a4e;font-size:1rem;">&#127968; Rooms</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>View all rooms and their current status.</li>
+                        <li>Filter by <strong>Available</strong>, <strong>Occupied</strong>, or <strong>Maintenance</strong>.</li>
+                        <li>Use the search box to find a room by number or type.</li>
+                        <li>Edit room details or change status via the action buttons.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#fffbee;border:1px solid #e8d89a;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#856404;font-size:1rem;">&#128101; Guests</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>Search guests by name or NIC using the search box.</li>
+                        <li>Click any row to view the full guest profile.</li>
+                        <li>Click <strong>&#9998; Edit</strong> to update guest information.</li>
+                        <li>Click <strong>&#10006; Delete</strong> to permanently remove a guest record.</li>
+                        <li>Click <strong>&#128203; Reserve</strong> to make a new reservation for that guest.</li>
+                        <li>Click <strong>+ Register Guest</strong> to add a new guest to the system.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#fff0f8;border:1px solid #e0b0d0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#8b1a5a;font-size:1rem;">&#128100; Reception Staff</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>View and manage reception staff accounts.</li>
+                        <li>Search by name or username using the search box.</li>
+                        <li>Click <strong>+ Register Reception</strong> to add a new reception user.</li>
+                    </ul>
+                </div>
+
+                <div style="background:#f4f0ff;border:1px solid #c8b8f0;border-radius:10px;padding:18px 20px;">
+                    <h3 style="margin:0 0 10px;color:#5b21b6;font-size:1rem;">&#128084; Bill &amp; Email</h3>
+                    <ul style="margin:0;padding-left:18px;line-height:2;color:#2d4a5e;font-size:0.88rem;">
+                        <li>After a guest checks out, click <strong>&#128084; Bill</strong> on the reservation row.</li>
+                        <li>The system calculates the total and sends a detailed receipt to the guest&#8217;s email.</li>
+                        <li>When cancelling, the system auto-emails the guest a cancellation notice.</li>
+                        <li>Ensure the guest&#8217;s email is registered for email features to work.</li>
+                    </ul>
+                </div>
+
             </div>
         </div>
     </div>
@@ -397,9 +487,14 @@
             <button class="btn-close no-print" onclick="closeBillModal()">&#10005;</button>
         </div>
         <div id="billContent"></div>
+        <div class="no-print" style="padding:10px 20px 2px;display:flex;align-items:center;gap:8px;border-top:1px solid #e6eff5;">
+            <label style="font-size:13px;color:#7a95a8;white-space:nowrap;">Send to:</label>
+            <input type="email" id="billEmailInput" placeholder="guest@email.com" style="flex:1;padding:8px 12px;border:1.5px solid #dce8ee;border-radius:8px;font-size:13px;color:#1e3a4a;outline:none;" />
+        </div>
         <div class="modal-footer no-print">
             <button class="btn-mcancel" onclick="closeBillModal()">Close</button>
             <button class="btn-print" onclick="printBill()">&#128424; Print Bill</button>
+            <button class="btn-email" id="btnEmailBill" onclick="emailBill()">&#128231; Email Bill</button>
         </div>
     </div>
 </div>
@@ -846,9 +941,13 @@ function showTab(name) {
 function applyFilter(f) {
     activeFilter = f;
     $('.filter-btn').removeClass('active');
-    if (f === 'all')    $('#filterAll').addClass('active');
-    if (f === 'active') $('#filterActive').addClass('active');
-    if (f === 'today')  $('#filterToday').addClass('active');
+    if (f === 'all')            $('#filterAll').addClass('active');
+    if (f === 'active')         $('#filterActive').addClass('active');
+    if (f === 'today')          $('#filterToday').addClass('active');
+    if (f === 'today_checkout') $('#filterTodayOut').addClass('active');
+    if (f === 'checked_in')     $('#filterCheckedIn').addClass('active');
+    if (f === 'checked_out')    $('#filterCheckedOut').addClass('active');
+    if (f === 'cancelled')      $('#filterCancelled').addClass('active');
     renderTable();
 }
 
@@ -857,8 +956,12 @@ function renderTable() {
     var q = ($('#searchInput').val() || '').toLowerCase();
     var list = allReservations.filter(function(r) {
         var matchFilter = activeFilter === 'all' ||
-            (activeFilter === 'active' && r.status === 'active') ||
-            (activeFilter === 'today'  && r.checkInDate === today);
+            (activeFilter === 'active'         && r.status === 'active') ||
+            (activeFilter === 'today'          && r.checkInDate === today) ||
+            (activeFilter === 'today_checkout' && r.checkOutDate === today) ||
+            (activeFilter === 'checked_in'     && r.status === 'checked_in') ||
+            (activeFilter === 'checked_out'    && r.status === 'checked_out') ||
+            (activeFilter === 'cancelled'      && r.status === 'cancelled');
         var matchSearch = !q || r.guestName.toLowerCase().includes(q) ||
             r.reservationNumber.toLowerCase().includes(q) || r.roomType.toLowerCase().includes(q);
         return matchFilter && matchSearch;
@@ -869,7 +972,7 @@ function renderTable() {
         return;
     }
     var rows = list.map(function(r, i) {
-        var badge = r.status === 'active' ? 'badge-active' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
+        var badge = r.status === 'active' ? 'badge-active' : r.status === 'checked_in' ? 'badge-checkin' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
         return '<tr onclick="openDetailModal(' + r.id + ')">' +
             '<td>' + (i+1) + '</td>' +
             '<td><strong>' + esc(r.reservationNumber) + '</strong></td>' +
@@ -883,6 +986,8 @@ function renderTable() {
             '<td onclick="event.stopPropagation()">' +
               '<button class="btn-view" onclick="openDetailModal(' + r.id + ')">Details</button>' +
               '<button class="btn-bill" onclick="openBillModal(' + r.id + ')">Bill</button>' +
+              (r.status === 'active' ? '<button class="btn-checkin" onclick="doCheckIn(' + r.id + ')">&#10003; Check In</button>' : '') +
+              (r.status === 'checked_in' || (r.status === 'active' && activeFilter === 'today_checkout') ? '<button class="btn-checkout" onclick="doCheckOut(' + r.id + ')">&#10004; Check Out</button>' : '') +
               (r.status === 'active' ?
                 '<button class="btn-edit" onclick="openEditResModal(' + r.id + ')">&#9998; Edit</button>'
                 : '') +
@@ -1074,7 +1179,9 @@ function openDetailModal(id) {
 function closeDetailModal() { $('#detailModal').removeClass('show'); }
 
 function renderDetailContent(r) {
-    var badgeCls = r.status === 'active' ? 'badge-active' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
+    var badgeCls = r.status === 'active' ? 'badge-active' : r.status === 'checked_in' ? 'badge-checkin' : r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
+    var actionBtns = r.status === 'active' ? '<button class="btn-checkin" onclick="closeDetailModal();doCheckIn(' + r.id + ')">&#10003; Check In</button>' :
+                     r.status === 'checked_in' ? '<button class="btn-checkout" onclick="closeDetailModal();doCheckOut(' + r.id + ')">&#10004; Check Out</button>' : '';
     var html = '<div>' +
         row('Reservation #', '<strong>' + esc(r.reservationNumber) + '</strong>') +
         row('Status', '<span class="badge ' + badgeCls + '">' + esc(r.status) + '</span>') +
@@ -1087,6 +1194,7 @@ function renderDetailContent(r) {
         row('Total Amount', '<strong>$' + esc(r.totalAmount) + '</strong>') +
         row('Created By',   esc(r.createdByName)) +
         row('Created At',   esc(r.createdAt)) +
+        (actionBtns ? '<div style="margin-top:16px;text-align:right;">' + actionBtns + '</div>' : '') +
     '</div>';
     $('#detailContent').html(html);
 }
@@ -1095,7 +1203,22 @@ function showBillFromDetail() {
     closeDetailModal();
     if (currentDetailId) openBillModal(currentDetailId);
 }
-
+function doCheckIn(id) {
+    $.ajax({ url: apiBase, type: 'POST', dataType: 'json', data: { action: 'checkin', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
+function doCheckOut(id) {
+    $.ajax({ url: apiBase, type: 'POST', dataType: 'json', data: { action: 'checkout', id: id },
+        success: function(res) {
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadReservations(); loadRooms(); }
+            else showAlert('error', res.message);
+        }
+    });
+}
 function cancelFromEditModal() {
     var id = parseInt($('#erResId').val());
     closeEditResModal();
@@ -1103,7 +1226,9 @@ function cancelFromEditModal() {
 }
 
 // ── Bill Modal ───────────────────────────────────────────────────────────────
+var currentBillResId = null;
 function openBillModal(id) {
+    currentBillResId = id;
     $.ajax({
         url: apiBase + '?action=bill&id=' + id, type: 'GET', dataType: 'json',
         success: function(res) {
@@ -1113,6 +1238,26 @@ function openBillModal(id) {
     });
 }
 function closeBillModal() { $('#billModal').removeClass('show'); }
+function emailBill() {
+    if (!currentBillResId) return;
+    var email = $('#billEmailInput').val().trim();
+    if (!email) { showAlert('error', 'Please enter an email address.'); return; }
+    var $btn = $('#btnEmailBill').prop('disabled', true).text('Sending\u2026');
+    $.ajax({
+        url: apiBase, type: 'POST', dataType: 'json',
+        data: { action: 'sendbill', id: currentBillResId, email: email },
+        success: function(res) {
+            $btn.prop('disabled', false).html('&#128231; Email Bill');
+            if (res.success) showAlert('success', '\u2714 ' + res.message);
+            else             showAlert('error',   res.message);
+        },
+        error: function(xhr) {
+            $btn.prop('disabled', false).html('&#128231; Email Bill');
+            var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : xhr.responseText || 'Failed to send email.';
+            showAlert('error', msg);
+        }
+    });
+}
 
 function printBill() {
     var content = document.getElementById('billContent').innerHTML;
@@ -1159,6 +1304,7 @@ function showBillData(b) {
         '<tr><td class="lbl">Tax (' + b.taxRate + ')</td><td class="val">$' + b.tax + '</td></tr>' +
         '<tr class="bill-total-row"><td class="lbl">TOTAL</td><td class="val">$' + b.total + '</td></tr>' +
         '</table>';
+    $('#billEmailInput').val(b.guestEmail || '');
     $('#billContent').html(html);
     $('#billModal').addClass('show');
 }
@@ -1283,34 +1429,38 @@ function confirmDeleteStaff() {
 }
 
 function renderGuestTable() {
-    var kw = ($('#guestSearchInput').val() || '').toLowerCase();
+    var q = ($('#guestSearch').val() || '').toLowerCase();
     var list = allGuests.filter(function(g) {
-        return !kw || g.fullName.toLowerCase().includes(kw) ||
-               g.mobileNumber.toLowerCase().includes(kw) ||
-               g.email.toLowerCase().includes(kw);
+        return !q || (g.fullName||'').toLowerCase().includes(q) ||
+               (g.mobileNumber||'').includes(q) ||
+               (g.nicNumber||'').toLowerCase().includes(q) ||
+               (g.email||'').toLowerCase().includes(q);
     });
     if (!list.length) {
-        $('#guestTableContainer').html('<div class="empty-state"><div class="es-icon">&#128101;</div><p>No guests found.</p></div>');
+        $('#guestTableContainer').html('<div class="empty-state"><div class="es-icon">&#128100;</div><p>No guests found.</p></div>');
         return;
     }
-    var html = '<table><thead><tr><th>Name</th><th>Mobile</th><th>Email</th><th>NIC / ID</th><th>Address</th><th>Registered</th><th></th></tr></thead><tbody>';
-    list.forEach(function(g) {
-        html += '<tr>' +
+    var rows = list.map(function(g, i) {
+        return '<tr onclick="openGuestDetailModal(' + g.id + ')">' +
+            '<td>' + (i+1) + '</td>' +
             '<td><strong>' + esc(g.fullName) + '</strong></td>' +
             '<td>' + esc(g.mobileNumber) + '</td>' +
-            '<td>' + (g.email ? esc(g.email) : '<span style="color:#aaa">—</span>') + '</td>' +
-            '<td>' + (g.nicNumber ? esc(g.nicNumber) : '<span style="color:#aaa">—</span>') + '</td>' +
-            '<td>' + (g.address ? esc(g.address) : '<span style="color:#aaa">—</span>') + '</td>' +
-            '<td style="color:#8aacbc;font-size:12px;">' + esc((g.createdAt || '').substring(0,10)) + '</td>' +
-            '<td style="white-space:nowrap;">' +
-            '<button onclick="openGuestDetailModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a6985,#2389b0);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;margin-right:3px;">Details</button>' +
-            '<button onclick="openEditGuestModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a7a4e,#27ae60);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;margin-right:3px;">&#9998; Edit</button>' +
-            '<button onclick="openDeleteGuestModal(' + g.id + ',\'' + esc(g.fullName) + '\')" style="background:linear-gradient(135deg,#c0392b,#e04b3a);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;">&#10006; Delete</button>' +
-            '</td>' +
-            '</tr>';
-    });
-    html += '</tbody></table>';
-    $('#guestTableContainer').html(html);
+            '<td>' + esc(g.email||'\u2014') + '</td>' +
+            '<td>' + esc(g.nicNumber||'\u2014') + '</td>' +
+            '<td>' + esc(g.address||'\u2014') + '</td>' +
+            '<td style="color:#8aacbc;font-size:12px;">' + esc((g.createdAt||'').substring(0,10)) + '</td>' +
+            '<td onclick="event.stopPropagation()">' +
+              '<button class="btn-guest-view" onclick="openGuestDetailModal(' + g.id + ')">Profile</button>' +
+              '<button class="btn-reserve" onclick="newResForGuest(' + g.id + ')">&#128203; Reserve</button>' +
+              '<button class="btn-guest-edit" onclick="openEditGuestModal(' + g.id + ')">&#9998; Edit</button>' +
+              '<button class="btn-guest-delete" onclick="openDeleteGuestModal(' + g.id + ',\'' + esc(g.fullName) + '\')" >&#10006; Delete</button>' +
+            '</td></tr>';
+    }).join('');
+    $('#guestTableContainer').html(
+        '<table><thead><tr><th>#</th><th>Full Name</th><th>Mobile</th>' +
+        '<th>Email</th><th>NIC / Passport</th><th>Address</th><th>Registered</th><th>Actions</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>'
+    );
 }
 
 function openRegisterGuestModal() {
@@ -1319,6 +1469,10 @@ function openRegisterGuestModal() {
     $('#guestModal').addClass('show');
 }
 function closeRegisterGuestModal() { $('#guestModal').removeClass('show'); }
+function newResForGuest(id) {
+    openAddModal();
+    setTimeout(function() { selectGuestForRes(id); }, 100);
+}
 
 function saveGuest() {
     var fullName     = $.trim($('#gFullName').val());

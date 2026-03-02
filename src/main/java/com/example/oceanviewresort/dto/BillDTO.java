@@ -21,6 +21,7 @@ public class BillDTO {
     private String tax;
     private String total;
     private String status;
+    private String guestEmail;   // resolved from guests table by contact number
 
     public BillDTO() {}
 
@@ -61,6 +62,7 @@ public class BillDTO {
     public String getTax()               { return tax; }
     public String getTotal()             { return total; }
     public String getStatus()            { return status; }
+    public String getGuestEmail()        { return guestEmail; }
 
     // ── Setters ───────────────────────────────────────────────────────────────
     public void setReservationNumber(String reservationNumber) { this.reservationNumber = reservationNumber; }
@@ -77,4 +79,5 @@ public class BillDTO {
     public void setTax(String tax)                             { this.tax = tax; }
     public void setTotal(String total)                         { this.total = total; }
     public void setStatus(String status)                       { this.status = status; }
+    public void setGuestEmail(String guestEmail)               { this.guestEmail = guestEmail; }
 }
