@@ -1,5 +1,9 @@
 # 🌊 OceanView Resort Hotel Management System
 
+![CI](https://github.com/NimeshUdawaththa/Ocean-View-Resort/actions/workflows/ci.yml/badge.svg)
+
+> 🔗 GitHub Repository: https://github.com/NimeshUdawaththa/Ocean-View-Resort
+
 A dynamic web-based *Hotel Management System* designed for the *OceanView Resort*.  
 The system streamlines operations for three key roles: *Admin, Manager, and Reception*, providing role-based dashboards and full hotel management functionalities.
 
@@ -45,4 +49,4 @@ Configured in `.github/workflows/ci.yml` — triggers on every push/PR to `main`
 1. Spins up a MySQL 8.0 service container  
 2. Sets up JDK 21 (Temurin)  
 3. Initialises the database schema  
-4. Runs `./mvnw test`  
+4. Runs `./mvnw test`     
