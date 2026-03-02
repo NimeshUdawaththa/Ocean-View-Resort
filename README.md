@@ -16,7 +16,7 @@ The system streamlines operations for three key roles: *Admin, Manager, and Rece
 - 📧 *Email Notifications* – Automated emails on booking confirmation and cancellation  
 - ⏰ *Auto-Expiry Scheduler* – Automatically marks expired reservations at midnight  
 - 📊 *Reports* – Occupancy and revenue reports (Admin/Manager only)  
-- ✅ *Testing & CI/CD* – 83 unit tests with JUnit 5, GitHub Actions for automated workflow  
+- ✅ *Testing & CI/CD* – 83 unit tests with JUnit 5, GitHub Actions for automated workflow.  
 
 ## 🛠️ Tech Stack
 - *Backend:* Java 21, Jakarta Servlets 6.1, JSP 3.1, JDBC  
@@ -49,4 +49,8 @@ Configured in `.github/workflows/ci.yml` — triggers on every push/PR to `main`
 1. Spins up a MySQL 8.0 service container  
 2. Sets up JDK 21 (Temurin)  
 3. Initialises the database schema  
-4. Runs `./mvnw test`     
+4. Runs `./mvnw test`  
+
+---
+
+> ✅ *Final update — March 2026. All features implemented, tested, and documented.*     
