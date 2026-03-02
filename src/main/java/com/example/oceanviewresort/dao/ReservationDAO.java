@@ -110,7 +110,7 @@ public class ReservationDAO {
 
     // ── Manual Check Out ───────────────────────────────────────────────────────
     public boolean checkOut(int id) {
-        String sql = "UPDATE reservations SET status='checked_out' WHERE id=? AND status='checked_in'";
+        String sql = "UPDATE reservations SET status='checked_out' WHERE id=? AND status IN ('checked_in','active')";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);

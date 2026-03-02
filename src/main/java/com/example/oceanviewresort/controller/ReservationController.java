@@ -225,7 +225,7 @@ public class ReservationController extends HttpServlet {
             boolean ok = svc.checkOut(id);
             JsonObject json = new JsonObject();
             json.addProperty("success", ok);
-            json.addProperty("message", ok ? "Guest checked out successfully." : "Check-out failed \u2013 reservation not checked in.");
+            json.addProperty("message", ok ? "Guest checked out successfully." : "Check-out failed \u2013 reservation not found or already checked out.");
             out.print(json);
             return;
         }

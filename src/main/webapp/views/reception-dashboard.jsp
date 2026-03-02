@@ -98,6 +98,12 @@
         .btn-cancel-res:hover { background:#e04b3a; color:white; }
         .btn-guest-view { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
         .btn-guest-view:hover { background:#1aa3c8; color:white; }
+        .btn-reserve { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-reserve:hover { background:#ffc107; color:#1a1a1a; }
+        .btn-guest-edit   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1a7a4e; transition:all .2s; margin-right:3px; }
+        .btn-guest-edit:hover   { background:#27ae60; color:white; }
+        .btn-guest-delete { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fdecea; color:#c0392b; transition:all .2s; margin-right:3px; }
+        .btn-guest-delete:hover { background:#e04b3a; color:white; }
 
         /* Primary/secondary buttons */
         .btn-primary   { display:inline-flex; align-items:center; gap:7px; padding:9px 20px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); color:white; border:none; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(13,122,154,.28); transition:transform .2s; }
@@ -253,6 +259,8 @@
         <div class="filter-bar">
             <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
             <button class="filter-btn" onclick="setFilter('active',this)">Active</button>
+            <button class="filter-btn" onclick="setFilter('today_checkin',this)">Today's Check-ins</button>
+            <button class="filter-btn" onclick="setFilter('today_checkout',this)">Today's Check-outs</button>
             <button class="filter-btn" onclick="setFilter('checked_in',this)">Checked In</button>
             <button class="filter-btn" onclick="setFilter('checked_out',this)">Checked Out</button>
             <button class="filter-btn" onclick="setFilter('cancelled',this)">Cancelled</button>
@@ -509,6 +517,19 @@
   </div>
 </div>
 
+<!-- Delete Guest Confirm -->
+<div class="modal-overlay" id="deleteGuestModal">
+  <div class="modal" style="max-width:420px;text-align:center;padding:36px 36px 30px;">
+    <div style="font-size:50px;margin-bottom:14px;">&#128465;&#65039;</div>
+    <h2 style="font-size:20px;font-weight:700;color:#1e3a4a;margin-bottom:8px;">Delete Guest?</h2>
+    <p style="font-size:14.5px;color:#7a95a8;">Delete <strong id="deleteGuestLabel" style="color:#1e3a4a;"></strong>? This cannot be undone.</p>
+    <div class="modal-footer" style="justify-content:center;margin-top:20px;">
+        <button class="btn-mcancel" onclick="closeDeleteGuestModal()">Cancel</button>
+        <button class="btn-msave" id="btnConfirmDeleteGuest" style="background:linear-gradient(135deg,#a93226,#e04b3a);" onclick="confirmDeleteGuest()">Delete Guest</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 /* === GLOBALS === */
@@ -621,7 +642,9 @@ function setFilter(f, btn) {
 function renderResTable() {
     var q = ($('#resSearch').val()||'').toLowerCase();
     var list = allReservations.filter(function(r){
-        if (resFilter !== 'all' && r.status !== resFilter) return false;
+        if (resFilter === 'today_checkin'  && r.checkInDate  !== today) return false;
+        if (resFilter === 'today_checkout' && r.checkOutDate !== today) return false;
+        if (resFilter !== 'all' && resFilter !== 'today_checkin' && resFilter !== 'today_checkout' && r.status !== resFilter) return false;
         return !q || r.guestName.toLowerCase().includes(q) ||
                r.reservationNumber.toLowerCase().includes(q) ||
                (r.contactNumber||'').includes(q) ||
@@ -639,7 +662,7 @@ function renderResTable() {
                     r.status === 'checked_out' ? 'badge-checkedout' : 'badge-cancelled';
         var actBtns =
             (r.status === 'active' ? '<button class="btn-checkin" onclick="event.stopPropagation();doCheckIn('+r.id+')">&#10003; Check In</button>' : '') +
-            (r.status === 'checked_in' ? '<button class="btn-checkout" onclick="event.stopPropagation();doCheckOut('+r.id+')">&#10004; Check Out</button>' : '') +
+            (r.status === 'checked_in' || (r.status === 'active' && resFilter === 'today_checkout') ? '<button class="btn-checkout" onclick="event.stopPropagation();doCheckOut('+r.id+')">&#10004; Check Out</button>' : '') +
             (r.status === 'active' ? '<button class="btn-edit" onclick="event.stopPropagation();openEditResModal(' + r.id + ')">&#9998; Edit</button>' : '');
         return '<tr onclick="openDetailModal(' + r.id + ')">' +
             '<td>'+(i+1)+'</td>' +
@@ -1068,6 +1091,8 @@ function renderGuestTable() {
             '<td onclick="event.stopPropagation()">' +
               '<button class="btn-guest-view" onclick="openGuestDetailModal('+g.id+')">Profile</button>' +
               '<button class="btn-primary" style="padding:5px 12px;font-size:12px;box-shadow:none;" onclick="event.stopPropagation();newResForGuest('+g.id+')">&#128203; Reserve</button>' +
+              '<button class="btn-guest-edit" onclick="event.stopPropagation();openEditGuestModal('+g.id+')">&#9998; Edit</button>' +
+              '<button class="btn-guest-delete" onclick="event.stopPropagation();openDeleteGuestModal('+g.id+',\'' + esc(g.fullName) + '\')" >&#10006; Delete</button>' +
             '</td></tr>';
     }).join('');
 
@@ -1123,7 +1148,8 @@ function openGuestDetailModal(id) {
 function closeGuestDetailModal() { $('#guestDetailModal').removeClass('show'); guestForNewRes = null; }
 
 /* === EDIT GUEST === */
-function openEditGuestModal() {
+function openEditGuestModal(id) {
+    if (id) currentGuestId = id;
     if (!currentGuestId) return;
     var g = allGuests.find(function(x){ return x.id === currentGuestId; });
     if (!g) return;
@@ -1139,6 +1165,28 @@ function openEditGuestModal() {
     setTimeout(function(){ $('#editGuestModal').addClass('show'); }, 200);
 }
 function closeEditGuestModal() { $('#editGuestModal').removeClass('show'); }
+
+var deleteGuestTargetId = null;
+function openDeleteGuestModal(id, name) {
+    deleteGuestTargetId = id;
+    $('#deleteGuestLabel').text(name);
+    $('#deleteGuestModal').addClass('show');
+}
+function closeDeleteGuestModal() { $('#deleteGuestModal').removeClass('show'); deleteGuestTargetId = null; }
+function confirmDeleteGuest() {
+    if (!deleteGuestTargetId) return;
+    var $btn = $('#btnConfirmDeleteGuest').prop('disabled', true).text('Deleting\u2026');
+    $.ajax({ url: apiGuests, type: 'POST', dataType: 'json',
+        data: { action:'delete', id:deleteGuestTargetId },
+        success: function(res) {
+            $btn.prop('disabled', false).text('Delete Guest');
+            closeDeleteGuestModal();
+            if (res.success) { showAlert('success', '\u2713 ' + res.message); loadGuests(); }
+            else { showAlert('error', res.message); }
+        },
+        error: function() { $btn.prop('disabled', false).text('Delete Guest'); closeDeleteGuestModal(); showAlert('error', 'Failed to delete guest.'); }
+    });
+}
 
 function saveEditGuest() {
     var id       = $('#egId').val();

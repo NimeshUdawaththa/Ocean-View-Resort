@@ -99,6 +99,17 @@
         /* Buttons */
         .btn-add-res { padding:9px 18px; background:linear-gradient(135deg,#0a4f6e,#1aa3c8); color:white; border:none; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 3px 10px rgba(13,122,154,.28); transition:transform .2s; }
         .btn-add-res:hover { transform:translateY(-1px); }
+        .toolbar-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .btn-secondary { display:inline-flex; align-items:center; gap:7px; padding:9px 20px; background:linear-gradient(135deg,#1b6b33,#34a853); color:white; border:none; border-radius:9px; font-size:13.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(52,168,83,.28); transition:transform .2s; }
+        .btn-secondary:hover { transform:translateY(-2px); }
+        .btn-guest-view   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:3px; }
+        .btn-guest-view:hover   { background:#1aa3c8; color:white; }
+        .btn-guest-edit   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1a7a4e; transition:all .2s; margin-right:3px; }
+        .btn-guest-edit:hover   { background:#27ae60; color:white; }
+        .btn-guest-delete { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fdecea; color:#c0392b; transition:all .2s; margin-right:3px; }
+        .btn-guest-delete:hover { background:#e04b3a; color:white; }
+        .btn-reserve { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#fff3cd; color:#856404; transition:all .2s; margin-right:3px; }
+        .btn-reserve:hover { background:#ffc107; color:#1a1a1a; }
         .btn-view   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e6f7fd; color:#0a4f6e; transition:all .2s; margin-right:4px; }
         .btn-view:hover   { background:#1aa3c8; color:white; }
         .btn-bill   { padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:#e8f8ee; color:#1b6b33; transition:all .2s; margin-right:4px; }
@@ -270,6 +281,7 @@
             <button class="filter-btn active" id="filterAll"         onclick="applyFilter('all')">All</button>
             <button class="filter-btn"        id="filterActive"      onclick="applyFilter('active')">Active</button>
             <button class="filter-btn"        id="filterToday"       onclick="applyFilter('today')">Today's Check-ins</button>
+            <button class="filter-btn"        id="filterTodayOut"    onclick="applyFilter('today_checkout')">Today's Check-outs</button>
             <button class="filter-btn"        id="filterCheckedIn"   onclick="applyFilter('checked_in')">Checked In</button>
             <button class="filter-btn"        id="filterCheckedOut"  onclick="applyFilter('checked_out')">Checked Out</button>
             <button class="filter-btn"        id="filterCancelled"   onclick="applyFilter('cancelled')">Cancelled</button>
@@ -306,12 +318,14 @@
     <div id="tab-guests" class="tab-pane">
         <div class="table-card">
             <div class="table-toolbar">
-                <div class="toolbar-title">&#128101; Guest Directory</div>
-                <div class="search-box">
-                    <span class="search-icon">&#128269;</span>
-                    <input type="text" id="guestSearchInput" placeholder="Name, mobile or email&hellip;" oninput="renderGuestTable()" />
+                <div class="toolbar-title">&#128100; Registered Guests</div>
+                <div class="toolbar-actions">
+                    <div class="search-box">
+                        <span class="search-icon">&#128269;</span>
+                        <input type="text" id="guestSearch" placeholder="Search name, mobile, NIC&hellip;" oninput="renderGuestTable()" />
+                    </div>
+                    <button class="btn-secondary" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
                 </div>
-                <button class="btn-add-res" onclick="openRegisterGuestModal()">&#43; Register Guest</button>
             </div>
             <div id="guestTableContainer">
                 <div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading guests&hellip;</p></div>
@@ -770,12 +784,13 @@ function updateStats() {
 function applyFilter(f) {
     activeFilter = f;
     $('.filter-btn[id^=filter]').removeClass('active');
-    if (f === 'all')         $('#filterAll').addClass('active');
-    if (f === 'active')      $('#filterActive').addClass('active');
-    if (f === 'today')       $('#filterToday').addClass('active');
-    if (f === 'checked_in')  $('#filterCheckedIn').addClass('active');
-    if (f === 'checked_out') $('#filterCheckedOut').addClass('active');
-    if (f === 'cancelled')   $('#filterCancelled').addClass('active');
+    if (f === 'all')            $('#filterAll').addClass('active');
+    if (f === 'active')         $('#filterActive').addClass('active');
+    if (f === 'today')          $('#filterToday').addClass('active');
+    if (f === 'today_checkout') $('#filterTodayOut').addClass('active');
+    if (f === 'checked_in')     $('#filterCheckedIn').addClass('active');
+    if (f === 'checked_out')    $('#filterCheckedOut').addClass('active');
+    if (f === 'cancelled')      $('#filterCancelled').addClass('active');
     renderTable();
 }
 
@@ -783,11 +798,12 @@ function renderTable() {
     var q = ($('#searchInput').val() || '').toLowerCase();
     var list = allReservations.filter(function(r) {
         var mf = activeFilter === 'all' ||
-            (activeFilter === 'active'      && r.status === 'active') ||
-            (activeFilter === 'today'       && r.checkInDate === today) ||
-            (activeFilter === 'checked_in'  && r.status === 'checked_in') ||
-            (activeFilter === 'checked_out' && r.status === 'checked_out') ||
-            (activeFilter === 'cancelled'   && r.status === 'cancelled');
+            (activeFilter === 'active'         && r.status === 'active') ||
+            (activeFilter === 'today'          && r.checkInDate === today) ||
+            (activeFilter === 'today_checkout' && r.checkOutDate === today) ||
+            (activeFilter === 'checked_in'     && r.status === 'checked_in') ||
+            (activeFilter === 'checked_out'    && r.status === 'checked_out') ||
+            (activeFilter === 'cancelled'      && r.status === 'cancelled');
         var ms = !q || r.guestName.toLowerCase().includes(q) ||
             r.reservationNumber.toLowerCase().includes(q) || r.roomType.toLowerCase().includes(q);
         return mf && ms;
@@ -806,7 +822,7 @@ function renderTable() {
               '<button class="btn-view" onclick="openDetailModal(' + r.id + ')">Details</button>' +
               '<button class="btn-bill" onclick="openBillModal(' + r.id + ')">Bill</button>' +
               (r.status === 'active' ? '<button class="btn-checkin" onclick="doCheckIn(' + r.id + ')">&#10003; Check In</button>' : '') +
-              (r.status === 'checked_in' ? '<button class="btn-checkout" onclick="doCheckOut(' + r.id + ')">&#10004; Check Out</button>' : '') +
+              (r.status === 'checked_in' || (r.status === 'active' && activeFilter === 'today_checkout') ? '<button class="btn-checkout" onclick="doCheckOut(' + r.id + ')">&#10004; Check Out</button>' : '') +
               (r.status === 'active' ? '<button class="btn-edit" onclick="openEditResModal(' + r.id + ')">&#9998; Edit</button>' : '') +
             '</td></tr>';
     }).join('');
@@ -1220,32 +1236,42 @@ function loadGuests() {
     });
 }
 function renderGuestTable() {
-    var kw = ($('#guestSearchInput').val() || '').toLowerCase();
+    var q = ($('#guestSearch').val() || '').toLowerCase();
     var list = allGuests.filter(function(g) {
-        return !kw || g.fullName.toLowerCase().includes(kw) ||
-               g.mobileNumber.toLowerCase().includes(kw) ||
-               (g.email && g.email.toLowerCase().includes(kw));
+        return !q || (g.fullName||'').toLowerCase().includes(q) ||
+               (g.mobileNumber||'').includes(q) ||
+               (g.nicNumber||'').toLowerCase().includes(q) ||
+               (g.email||'').toLowerCase().includes(q);
     });
-    if (!list.length) { $('#guestTableContainer').html('<div class="empty-state"><div class="es-icon">&#128101;</div><p>No guests found.</p></div>'); return; }
-    var html = '<table><thead><tr><th>Name</th><th>Mobile</th><th>Email</th><th>NIC / ID</th><th>Address</th><th>Registered</th><th>Actions</th></tr></thead><tbody>';
-    list.forEach(function(g) {
-        html += '<tr><td><strong>' + esc(g.fullName) + '</strong></td>' +
+    if (!list.length) { $('#guestTableContainer').html('<div class="empty-state"><div class="es-icon">&#128100;</div><p>No guests found.</p></div>'); return; }
+    var rows = list.map(function(g, i) {
+        return '<tr onclick="openGuestDetailModal(' + g.id + ')">' +
+            '<td>' + (i+1) + '</td>' +
+            '<td><strong>' + esc(g.fullName) + '</strong></td>' +
             '<td>' + esc(g.mobileNumber) + '</td>' +
-            '<td>' + (g.email ? esc(g.email) : '<span style="color:#aaa">\u2014</span>') + '</td>' +
-            '<td>' + (g.nicNumber ? esc(g.nicNumber) : '<span style="color:#aaa">\u2014</span>') + '</td>' +
-            '<td>' + (g.address ? esc(g.address) : '<span style="color:#aaa">\u2014</span>') + '</td>' +
-            '<td style="color:#8aacbc;font-size:12px;">' + esc((g.createdAt || '').substring(0,10)) + '</td>' +
-            '<td style="white-space:nowrap;">' +
-              '<button onclick="openGuestDetailModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a6985,#2389b0);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;margin-right:3px;">Details</button>' +
-              '<button onclick="openEditGuestModal(' + g.id + ')" style="background:linear-gradient(135deg,#1a7a4e,#27ae60);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;margin-right:3px;">&#9998; Edit</button>' +
-              '<button onclick="openDeleteGuestModal(' + g.id + ',\'' + esc(g.fullName) + '\')" style="background:linear-gradient(135deg,#c0392b,#e04b3a);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11.5px;">&#10006; Delete</button>' +
+            '<td>' + esc(g.email||'\u2014') + '</td>' +
+            '<td>' + esc(g.nicNumber||'\u2014') + '</td>' +
+            '<td>' + esc(g.address||'\u2014') + '</td>' +
+            '<td style="color:#8aacbc;font-size:12px;">' + esc((g.createdAt||'').substring(0,10)) + '</td>' +
+            '<td onclick="event.stopPropagation()">' +
+              '<button class="btn-guest-view" onclick="openGuestDetailModal(' + g.id + ')">Profile</button>' +
+              '<button class="btn-reserve" onclick="newResForGuest(' + g.id + ')">&#128203; Reserve</button>' +
+              '<button class="btn-guest-edit" onclick="openEditGuestModal(' + g.id + ')">&#9998; Edit</button>' +
+              '<button class="btn-guest-delete" onclick="openDeleteGuestModal(' + g.id + ',\'' + esc(g.fullName) + '\')" >&#10006; Delete</button>' +
             '</td></tr>';
-    });
-    html += '</tbody></table>';
-    $('#guestTableContainer').html(html);
+    }).join('');
+    $('#guestTableContainer').html(
+        '<table><thead><tr><th>#</th><th>Full Name</th><th>Mobile</th>' +
+        '<th>Email</th><th>NIC / Passport</th><th>Address</th><th>Registered</th><th>Actions</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>'
+    );
 }
 function openRegisterGuestModal() { $('#guestForm')[0].reset(); $('#guestAlertBox').hide(); $('#guestModal').addClass('show'); }
 function closeRegisterGuestModal() { $('#guestModal').removeClass('show'); }
+function newResForGuest(id) {
+    openAddModal();
+    setTimeout(function() { selectGuestForRes(id); }, 100);
+}
 function saveGuest() {
     var fullName = $.trim($('#gFullName').val()), mobile = $.trim($('#gMobile').val());
     if (!fullName || !mobile) { $('#guestAlertBox').show().text('Full name and mobile number are required.'); return; }
