@@ -73,11 +73,17 @@ CREATE TABLE IF NOT EXISTS reservations (
     address            VARCHAR(255),
     contact_number     VARCHAR(30)  NOT NULL,
     room_type          VARCHAR(50)  NOT NULL,
+    room_id            INT          DEFAULT NULL,
     check_in_date      DATE         NOT NULL,
     check_out_date     DATE         NOT NULL,
     total_amount       DECIMAL(10,2),
     status             VARCHAR(20)  NOT NULL DEFAULT 'active',
     created_by         INT,
     created_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (room_id)    REFERENCES rooms(id)  ON DELETE SET NULL
 );
+
+-- Add room_id to existing reservations table if it doesn't exist yet
+ALTER TABLE reservations ADD COLUMN room_id INT DEFAULT NULL AFTER room_type;
+ALTER TABLE reservations ADD CONSTRAINT fk_res_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL;
