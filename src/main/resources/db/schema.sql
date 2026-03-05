@@ -84,6 +84,4 @@ CREATE TABLE IF NOT EXISTS reservations (
     FOREIGN KEY (room_id)    REFERENCES rooms(id)  ON DELETE SET NULL
 );
 
--- Add room_id to existing reservations table if it doesn't exist yet
-ALTER TABLE reservations ADD COLUMN room_id INT DEFAULT NULL AFTER room_type;
-ALTER TABLE reservations ADD CONSTRAINT fk_res_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL;
+-- room_id column and FK are already defined in the CREATE TABLE above
