@@ -266,7 +266,8 @@
         <button class="tab-btn" id="tab-btn-rooms" onclick="showTab('rooms')">&#127968; Rooms</button>
         <button class="tab-btn" id="tab-btn-guests" onclick="showTab('guests')">&#128101; Guests</button>
         <button class="tab-btn" id="tab-btn-staff" onclick="showTab('staff')">&#128100; Staff</button>
-        <button class="tab-btn" id="tab-btn-help"  onclick="showTab('help')">&#10067; Help</button>
+        <button class="tab-btn" id="tab-btn-help"    onclick="showTab('help')">&#10067; Help</button>
+        <button class="tab-btn" id="tab-btn-reports" onclick="showTab('reports')">&#128202; Reports</button>
     </div>
 
     <!-- RESERVATIONS TAB -->
@@ -408,6 +409,47 @@
                     </ul>
                 </div>
 
+            </div>
+        </div>
+    </div>
+    <!-- REPORTS TAB -->
+    <div id="tab-reports" class="tab-pane">
+        <div id="rptSummaryCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:22px;"></div>
+        <div class="table-card" style="padding:18px 22px 14px;margin-bottom:18px;">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <label style="font-size:12px;font-weight:600;color:#6b8a9a;">Status</label>
+                    <select id="rptStatus" style="padding:8px 12px;border:1.5px solid #d0e8f0;border-radius:8px;font-size:13px;">
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="checked_in">Checked In</option>
+                        <option value="checked_out">Checked Out</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <label style="font-size:12px;font-weight:600;color:#6b8a9a;">From Date</label>
+                    <input type="date" id="rptFrom" style="padding:8px 12px;border:1.5px solid #d0e8f0;border-radius:8px;font-size:13px;" />
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <label style="font-size:12px;font-weight:600;color:#6b8a9a;">To Date</label>
+                    <input type="date" id="rptTo" style="padding:8px 12px;border:1.5px solid #d0e8f0;border-radius:8px;font-size:13px;" />
+                </div>
+                <button onclick="loadReport()" style="padding:9px 20px;background:linear-gradient(135deg,#0a4f6e,#1aa3c8);color:white;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">&#128269; Apply</button>
+                <button onclick="resetReportFilters()" style="padding:9px 16px;background:#f0f6fa;color:#0a4f6e;border:1.5px solid #c0dce8;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Reset</button>
+                <button onclick="printReport()" style="padding:9px 18px;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;margin-left:8px;">&#128424; Print Report</button>
+            </div>
+        </div>
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div class="toolbar-title">&#128203; Reservation History</div>
+                <div class="search-box">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="rptSearch" placeholder="Search guest, room or res #&hellip;" oninput="renderReportTable()" />
+                </div>
+            </div>
+            <div id="rptTableContainer">
+                <div class="empty-state"><div class="es-icon">&#8987;</div><p>Click the Reports tab to load data&hellip;</p></div>
             </div>
         </div>
     </div>
@@ -781,13 +823,16 @@ var cancelResTarget  = null;
 var apiBase          = '<%= request.getContextPath() %>/api/reservations';
 var roomApiBase      = '<%= request.getContextPath() %>/api/rooms';
 var guestApiBase     = '<%= request.getContextPath() %>/api/guests';
-var today            = new Date().toISOString().split('T')[0];
+var reportApiBase    = '<%= request.getContextPath() %>/api/reports';
+(function(){ var _d=new Date(); var _pad=function(n){return String(n).padStart(2,'0');}; window.today=_d.getFullYear()+'-'+_pad(_d.getMonth()+1)+'-'+_pad(_d.getDate()); })();
+var today            = window.today;
 var allRooms         = [];
 var deleteRoomTarget = null;
 var allGuests        = [];
 var selectedGuest    = null;
 var staffApiBase     = '<%= request.getContextPath() %>/api/users';
 var allStaff         = [];
+var allReportRows    = [];
 
 // ── Load ────────────────────────────────────────────────────────────────────
 function loadReservations() {
@@ -935,6 +980,140 @@ function showTab(name) {
     $('.tab-pane').removeClass('active');
     $('#tab-btn-' + name).addClass('active');
     $('#tab-' + name).addClass('active');
+    if (name === 'reports') loadReport();
+}
+
+// ── Reports ──────────────────────────────────────────────────────────────────
+function loadReport() {
+    var status = $('#rptStatus').val();
+    var from   = $('#rptFrom').val();
+    var to     = $('#rptTo').val();
+    var params = 'status=' + encodeURIComponent(status);
+    if (from) params += '&from=' + from;
+    if (to)   params += '&to='   + to;
+    $('#rptTableContainer').html('<div class="empty-state"><div class="es-icon">&#8987;</div><p>Loading&hellip;</p></div>');
+    $.ajax({
+        url: reportApiBase + '?' + params, type: 'GET', dataType: 'json',
+        success: function(res) {
+            if (!res.success) { showAlert('error', res.message || 'Failed to load report.'); return; }
+            renderReportSummary(res.stats);
+            allReportRows = res.history;
+            renderReportTable();
+        },
+        error: function() { showAlert('error', 'Failed to load report data.'); }
+    });
+}
+function resetReportFilters() {
+    $('#rptStatus').val('all'); $('#rptFrom').val(''); $('#rptTo').val(''); $('#rptSearch').val('');
+    loadReport();
+}
+function renderReportSummary(s) {
+    var fmt = function(n) { return '$' + parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+    var cards = [
+        { label:'Total Reservations', value:s.total,            bg:'#eef7ff', border:'#bcd9f0', color:'#0a4f6e' },
+        { label:'Active',             value:s.active,           bg:'#eafaf1', border:'#a9dfbf', color:'#1a7a4e' },
+        { label:'Checked In',         value:s.checkedIn,        bg:'#fff9e6', border:'#f5d97a', color:'#856404' },
+        { label:'Checked Out',        value:s.checkedOut,       bg:'#f0f0ff', border:'#c0b8f0', color:'#3b28b0' },
+        { label:'Cancelled',          value:s.cancelled,        bg:'#fff0f0', border:'#f0b8b8', color:'#b01a1a' },
+        { label:'Total Revenue',      value:fmt(s.totalRevenue), bg:'#eaffee', border:'#90d4a0', color:'#145a32' }
+    ];
+    var html = '';
+    cards.forEach(function(c) {
+        html += '<div style="background:'+c.bg+';border:1.5px solid '+c.border+';border-radius:12px;padding:16px 18px;">'+
+                '<div style="font-size:12px;font-weight:600;color:'+c.color+';text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">'+c.label+'</div>'+
+                '<div style="font-size:24px;font-weight:800;color:'+c.color+';">'+c.value+'</div></div>';
+    });
+    $('#rptSummaryCards').html(html);
+}
+function renderReportTable() {
+    var q = ($('#rptSearch').val() || '').toLowerCase();
+    var rows = allReportRows.filter(function(r) {
+        return !q || r.guestName.toLowerCase().includes(q) ||
+               r.reservationNumber.toLowerCase().includes(q) ||
+               r.roomType.toLowerCase().includes(q) ||
+               (r.contactNumber||'').toLowerCase().includes(q);
+    });
+    if (!rows.length) { $('#rptTableContainer').html('<div class="empty-state"><div class="es-icon">&#128202;</div><p>No records found.</p></div>'); return; }
+    var statusBadge = function(s) {
+        var map={active:'#1a7a4e:#d4edda',checked_in:'#856404:#fff3cd',checked_out:'#3b28b0:#e8e4ff',cancelled:'#b01a1a:#fde8e8'};
+        var v=map[s]||'#555:#eee'; var p=v.split(':');
+        return '<span style="background:'+p[1]+';color:'+p[0]+';padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;">'+esc(s.replace('_',' '))+'</span>';
+    };
+    var html='<table><thead><tr><th>#</th><th>Res No.</th><th>Guest</th><th>Contact</th>'+
+        '<th>Room Type</th><th>Check-In</th><th>Check-Out</th><th>Nights</th><th>Total (USD)</th><th>Status</th><th>Created By</th></tr></thead><tbody>';
+    rows.forEach(function(r,i){
+        html+='<tr><td>'+(i+1)+'</td><td><strong>'+esc(r.reservationNumber)+'</strong></td><td>'+esc(r.guestName)+'</td><td>'+esc(r.contactNumber)+'</td>'+
+              '<td>'+esc(r.roomType)+'</td><td>'+esc(r.checkInDate)+'</td><td>'+esc(r.checkOutDate)+'</td>'+
+              '<td style="text-align:center;">'+r.nights+'</td><td style="font-weight:700;">$'+parseFloat(r.totalAmount||0).toFixed(2)+'</td>'+
+              '<td>'+statusBadge(r.status)+'</td><td style="font-size:12px;color:#6b8a9a;">'+esc(r.createdByName)+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    $('#rptTableContainer').html(html);
+}
+function printReport() {
+    if (!allReportRows.length) { showAlert('error','No report data loaded. Select filters and click Apply first.'); return; }
+    var q = ($('#rptSearch').val() || '').toLowerCase();
+    var rows = allReportRows.filter(function(r) {
+        return !q || r.guestName.toLowerCase().includes(q) ||
+               r.reservationNumber.toLowerCase().includes(q) ||
+               r.roomType.toLowerCase().includes(q) ||
+               (r.contactNumber||'').toLowerCase().includes(q);
+    });
+    var statusFilter = $('#rptStatus').val();
+    var fromDate     = $('#rptFrom').val();
+    var toDate       = $('#rptTo').val();
+    var filterInfo   = [];
+    if (statusFilter && statusFilter !== 'all') filterInfo.push('Status: ' + statusFilter.replace('_',' '));
+    if (fromDate) filterInfo.push('From: ' + fromDate);
+    if (toDate)   filterInfo.push('To: ' + toDate);
+    var fmt = function(n) { return '$' + parseFloat(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+    var totalRevenue = rows.reduce(function(s,r){ return s + (r.status !== 'cancelled' ? parseFloat(r.totalAmount||0) : 0); }, 0);
+    var counts = { total: rows.length, active:0, checked_in:0, checked_out:0, cancelled:0 };
+    rows.forEach(function(r){ if (counts[r.status] !== undefined) counts[r.status]++; });
+    var statsHtml = [
+        ['Total Reservations', counts.total,           '#0a4f6e'],
+        ['Active',             counts.active,          '#1a7a4e'],
+        ['Checked In',         counts.checked_in,      '#856404'],
+        ['Checked Out',        counts.checked_out,     '#3b28b0'],
+        ['Cancelled',          counts.cancelled,       '#b01a1a'],
+        ['Total Revenue',      fmt(totalRevenue),      '#145a32']
+    ].map(function(c){
+        return '<div style="border:1px solid #ddd;border-radius:8px;padding:10px 14px;text-align:center;">'+
+               '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#6b8a9a;margin-bottom:4px;">'+c[0]+'</div>'+
+               '<div style="font-size:20px;font-weight:800;color:'+c[2]+';">'+c[1]+'</div></div>';
+    }).join('');
+    var tableRows = rows.map(function(r,i){
+        return '<tr style="'+(i%2===0?'background:#f8fbfd;':'')+'">'+
+            '<td>'+(i+1)+'</td><td><strong>'+esc(r.reservationNumber)+'</strong></td>'+
+            '<td>'+esc(r.guestName)+'</td><td>'+esc(r.contactNumber)+'</td>'+
+            '<td>'+esc(r.roomType)+'</td><td>'+esc(r.checkInDate)+'</td><td>'+esc(r.checkOutDate)+'</td>'+
+            '<td style="text-align:center;">'+r.nights+'</td>'+
+            '<td style="font-weight:700;">$'+parseFloat(r.totalAmount||0).toFixed(2)+'</td>'+
+            '<td>'+esc(r.status.replace('_',' '))+'</td>'+
+            '<td>'+esc(r.createdByName)+'</td></tr>';
+    }).join('');
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>OceanView Resort - Report</title>'+
+        '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222;font-size:13px;}'+
+        'h1{color:#0a4f6e;margin:0 0 2px;font-size:22px;}'+
+        '.meta{font-size:11px;color:#6b8a9a;margin-bottom:18px;}'+
+        '.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;}'+
+        'table{width:100%;border-collapse:collapse;font-size:11px;}'+
+        'th{background:#0a4f6e;color:#fff;padding:7px 9px;text-align:left;}'+
+        'td{padding:5px 9px;border-bottom:1px solid #e8f0f5;}'+
+        '@media print{body{padding:10px;}}'+
+        '</style></head><body>'+
+        '<h1>&#9875; OceanView Resort</h1>'+
+        '<div class="meta">Reservation Report &nbsp;&bull;&nbsp; Generated: '+new Date().toLocaleString()+(filterInfo.length?' &nbsp;&bull;&nbsp;'+filterInfo.join(' &nbsp;&bull;&nbsp; '):'')+'</div>'+
+        '<div class="stats">'+statsHtml+'</div>'+
+        '<table><thead><tr><th>#</th><th>Res No.</th><th>Guest</th><th>Contact</th>'+
+        '<th>Room Type</th><th>Check-In</th><th>Check-Out</th><th>Nights</th>'+
+        '<th>Total (USD)</th><th>Status</th><th>Created By</th></tr></thead>'+
+        '<tbody>'+tableRows+'</tbody></table></body></html>';
+    var w = window.open('','_blank','width=1100,height=700');
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(function(){ w.print(); }, 400);
 }
 
 // ── Filter ──────────────────────────────────────────────────────────────────

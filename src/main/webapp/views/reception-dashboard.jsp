@@ -594,7 +594,8 @@ var resFilter       = 'all';
 var apiRes    = '<%= request.getContextPath() %>/api/reservations';
 var apiRooms  = '<%= request.getContextPath() %>/api/rooms';
 var apiGuests = '<%= request.getContextPath() %>/api/guests';
-var today     = new Date().toISOString().split('T')[0];
+(function(){ var _d=new Date(); var _pad=function(n){return String(n).padStart(2,'0');}; window.today=_d.getFullYear()+'-'+_pad(_d.getMonth()+1)+'-'+_pad(_d.getDate()); })();
+var today     = window.today;
 
 /* === TABS === */
 function switchTab(name, btn) {

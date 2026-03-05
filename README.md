@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/NimeshUdawaththa/Ocean-View-Resort/actions/workflows/ci.yml/badge.svg)
 
-> 🔗 GitHub Repository: https://github.com/NimeshUdawaththa/Ocean-View-Resort
+> 🔗 GitHub Repository: https://gith.ub.com/NimeshUdawaththa/Ocean-View-Resort
 
 A dynamic web-based *Hotel Management System* designed for the *OceanView Resort*.  
 The system streamlines operations for three key roles: *Admin, Manager, and Reception*, providing role-based dashboards and full hotel management functionalities.

@@ -7,10 +7,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Data Access Object for the `guests` table.
- * Guests are uniquely identified by mobile_number and email.
- */
+
 public class GuestDAO {
 
     // ── Insert ────────────────────────────────────────────────────────────────
